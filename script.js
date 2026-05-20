@@ -38,7 +38,6 @@ async function handleSend() {
     const text = userInput.value.trim();
     if (!text) return;
 
-    // Remove welcome screen
     const welcome = document.querySelector('.welcome-hero');
     if (welcome) welcome.remove();
 
@@ -46,18 +45,15 @@ async function handleSend() {
     userInput.value = '';
     userInput.style.height = 'auto';
 
-    // Add Thinking Placeholder
     const aiMsgId = appendMessage('ai', 'Roty is thinking...');
     const aiMsgDiv = document.getElementById(aiMsgId);
     
     let responseText = "";
 
-    // 1. Identity Check
     const query = text.toLowerCase();
-    if (query.includes("who are you") || query.includes("your name") || query.includes("creator")) {
+    if (query.includes("who are you") || query.includes("your name")) {
         responseText = IDENTITY;
     } else {
-        // 2. Call Vercel Serverless Function (Secure)
         try {
             const response = await fetch('/api/chat', {
                 method: "POST",
@@ -66,19 +62,20 @@ async function handleSend() {
             });
             
             const data = await response.json();
-            
-            // Extract text from Gemini structure
-            if (data.candidates && data.candidates[0].content.parts[0].text) {
+
+            // Check if our backend returned an error
+            if (data.error) {
+                responseText = "Error: " + data.error;
+            } else if (data.candidates && data.candidates[0].content.parts[0].text) {
                 responseText = data.candidates[0].content.parts[0].text;
             } else {
-                responseText = "I received an empty response. Please try rephrasing.";
+                responseText = "I received an unexpected response format from the AI.";
             }
         } catch (e) {
-            responseText = "Connection error. Make sure the GEMINI_API_KEY is set in Vercel Environment Variables.";
+            responseText = "Network error. Check your Vercel logs.";
         }
     }
 
-    // Update AI message with real response
     aiMsgDiv.innerText = responseText;
     saveChat(text, responseText);
     chatFlow.scrollTop = chatFlow.scrollHeight;
