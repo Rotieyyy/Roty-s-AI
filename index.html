@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roty's AI</title>
+    <title>Roty's AI Pro</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -12,44 +12,26 @@
         <aside class="sidebar">
             <div class="brand">
                 <div class="brand-icon">R</div>
-                <h1>Roty's AI</h1>
+                <h1>Roty's AI <span class="pro-badge">PRO</span></h1>
             </div>
-
-            <button class="new-chat-btn" id="new-chat-btn">
-                <i class="fas fa-plus"></i> New Chat
-            </button>
-
+            <button class="new-chat-btn" id="new-chat-btn"><i class="fas fa-plus"></i> New Chat</button>
             <div class="history-section">
-                <p class="section-label">Recent History</p>
-                <div id="history-list" class="history-list">
-                    <!-- History items injected here -->
-                </div>
+                <p class="section-label">History</p>
+                <div id="history-list" class="history-list"></div>
             </div>
-
             <div class="sidebar-footer">
-                <button id="clear-history" class="clear-btn"><i class="fas fa-trash-alt"></i> Clear All</button>
-                <div class="status-box">
-                    <span class="dot"></span> System Online
-                </div>
+                <button id="clear-history" class="clear-btn"><i class="fas fa-trash"></i> Clear History</button>
+                <div class="status-box"><span class="dot pulse"></span> Pro Online</div>
             </div>
         </aside>
-
         <main class="main-container">
-            <div id="chat-flow" class="chat-flow">
-                <div class="welcome-hero" id="welcome-screen">
-                    <h2 class="gradient-text">Roty's AI</h2>
-                    <p>Your workspace is ready. How can I help you today?</p>
-                </div>
-            </div>
-
+            <div id="chat-flow" class="chat-flow"></div>
             <div class="input-section">
                 <div class="input-capsule">
-                    <textarea id="user-input" placeholder="Message Roty's AI..." rows="1"></textarea>
-                    <div class="controls">
-                        <button id="send-btn"><i class="fas fa-arrow-up"></i></button>
-                    </div>
+                    <textarea id="user-input" placeholder="Message Roty AI Pro..." rows="1"></textarea>
+                    <div class="controls"><button id="send-btn"><i class="fas fa-arrow-up"></i></button></div>
                 </div>
-                <p class="disclaimer">Roty's AI v1.0 • Launched May 2024</p>
+                <p class="disclaimer">Roty's AI Pro Engine</p>
             </div>
         </main>
     </div>
