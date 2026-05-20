@@ -1,39 +1,32 @@
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).end();
     const { prompt } = req.body;
-    const key = process.env.GEMINI_API_KEY;
+    const key = process.env.GROQ_API_KEY;
 
-    if (!key) return res.status(500).json({ error: "API Key missing in Vercel settings." });
+    if (!key) return res.status(500).json({ error: "Groq Key missing in Vercel." });
 
-    // We will try Flash 1.5 and Gemini Pro
-    const models = ["gemini-1.5-flash", "gemini-pro"];
-    let debugInfo = [];
+    try {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${key}`
+            },
+            body: JSON.stringify({
+                messages: [{ role: "user", content: prompt }],
+                model: "llama-3.1-8b-instant",
+            })
+        });
 
-    for (const model of models) {
-        try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
-
-            const data = await response.json();
-
-            if (response.ok && data.candidates) {
-                return res.status(200).json(data);
-            } else {
-                // Save the exact error from Google to show the user
-                debugInfo.push(`${model}: ${data.error?.message || 'Unknown Error'}`);
-            }
-        } catch (err) {
-            debugInfo.push(`${model}: ${err.message}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            return res.status(400).json({ error: data.error.message });
         }
-    }
 
-    // This will now tell you EXACTLY why Google is mad
-    return res.status(400).json({ 
-        error: "Google Connection Failed",
-        details: debugInfo.join(" | ")
-    });
+        // Groq uses OpenAI format: data.choices[0].message.content
+        res.status(200).json({ text: data.choices[0].message.content });
+    } catch (error) {
+        res.status(500).json({ error: "Groq Engine Error: " + error.message });
+    }
 }
