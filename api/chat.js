@@ -7,11 +7,11 @@ export default async function handler(req, res) {
     const key = process.env.GEMINI_API_KEY;
 
     if (!key) {
-        return res.status(500).json({ error: "API Key is missing in Vercel Environment Variables" });
+        return res.status(500).json({ error: "API Key is missing in Vercel settings." });
     }
 
-    // UPDATED: Using gemini-1.5-pro for maximum intelligence
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${key}`;
+    // This is the specific URL for Gemini 1.5 Pro on the Free Tier
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${key}`;
 
     try {
         const response = await fetch(url, {
@@ -22,7 +22,6 @@ export default async function handler(req, res) {
                 generationConfig: {
                     temperature: 0.7,
                     topP: 0.95,
-                    topK: 64,
                     maxOutputTokens: 8192,
                 }
             })
@@ -30,12 +29,15 @@ export default async function handler(req, res) {
 
         const data = await response.json();
 
+        // If Pro fails (sometimes Google limits Free tier access), it returns an error
         if (data.error) {
-            return res.status(400).json({ error: data.error.message });
+            return res.status(400).json({ 
+                error: "Google AI Studio says: " + data.error.message 
+            });
         }
 
         res.status(200).json(data);
     } catch (error) {
-        res.status(500).json({ error: "Failed to connect to Roty Pro Engine: " + error.message });
+        res.status(500).json({ error: "Roty Pro Engine Connection Failed: " + error.message });
     }
 }
