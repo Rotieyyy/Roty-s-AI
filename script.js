@@ -8,7 +8,7 @@ const clearHistoryBtn = document.getElementById('clear-history');
 let currentChatId = null;
 let allChats = JSON.parse(localStorage.getItem('roty_chats')) || [];
 
-const IDENTITY = "I am Roty's AI, a powerful and free assistant. I was launched in May 2024 to help you with any task!";
+const IDENTITY = "I am Roty's AI, powered by Groq Llama 3. I am a super-fast, free AI assistant launched in May 2024.";
 
 function init() {
     renderHistory();
@@ -24,7 +24,7 @@ function startNewChat() {
     chatFlow.innerHTML = `
         <div class="welcome-hero">
             <h2 class="gradient-text">Roty's AI</h2>
-            <p>Welcome! How can I help you today?</p>
+            <p>Groq Engine Online. How can I help you today?</p>
         </div>`;
     document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
 }
@@ -40,7 +40,7 @@ async function handleSend() {
     userInput.value = '';
     userInput.style.height = 'auto';
 
-    const aiMsgId = appendMessage('ai', 'Roty is thinking...');
+    const aiMsgId = appendMessage('ai', 'Thinking...');
     const aiMsgDiv = document.getElementById(aiMsgId);
     
     let responseText = "";
@@ -59,13 +59,14 @@ async function handleSend() {
 
             if (data.error) {
                 responseText = "System Note: " + data.error;
-            } else if (data.candidates && data.candidates[0].content.parts[0].text) {
-                responseText = data.candidates[0].content.parts[0].text;
+            } else if (data.text) {
+                // IMPORTANT: Groq response is in data.text
+                responseText = data.text;
             } else {
-                responseText = "I couldn't generate a response. Please try again.";
+                responseText = "I couldn't generate a response. Try again.";
             }
         } catch (e) {
-            responseText = "Connection error. Please refresh and try again.";
+            responseText = "Network error. Please check your Vercel connection.";
         }
     }
 
