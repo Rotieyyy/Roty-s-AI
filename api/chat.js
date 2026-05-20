@@ -7,11 +7,11 @@ export default async function handler(req, res) {
     const key = process.env.GEMINI_API_KEY;
 
     if (!key) {
-        return res.status(500).json({ error: "API Key missing in Vercel settings." });
+        return res.status(500).json({ error: "API Key is missing in Vercel. Please add it to Environment Variables." });
     }
 
-    // Using gemini-1.5-flash: it's fast, free, and very stable
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${key}`;
+    // CHANGED: Using v1beta which is the most compatible with 1.5-flash on the Free Tier
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
 
     try {
         const response = await fetch(url, {
@@ -24,12 +24,13 @@ export default async function handler(req, res) {
 
         const data = await response.json();
 
+        // Check for errors from Google
         if (data.error) {
             return res.status(400).json({ error: data.error.message });
         }
 
         res.status(200).json(data);
     } catch (error) {
-        res.status(500).json({ error: "Connection failed: " + error.message });
+        res.status(500).json({ error: "Connection error: " + error.message });
     }
 }
