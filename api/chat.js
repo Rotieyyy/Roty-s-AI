@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-    if (req.method !== 'POST') return res.status(405).end();
     const { prompt } = req.body;
     const key = process.env.GROQ_API_KEY;
 
@@ -13,15 +12,14 @@ export default async function handler(req, res) {
             body: JSON.stringify({
                 model: "llama-3.1-8b-instant",
                 messages: [
-                    { role: "system", content: "You are Roty's AI. Respond in organized Markdown. If asked to write code, use triple backticks." },
+                    { role: "system", content: "You are Roty's AI. Respond in clear, organized Markdown. Use professional language." },
                     { role: "user", content: prompt }
                 ]
             })
         });
-
         const data = await response.json();
         res.status(200).json({ text: data.choices[0].message.content });
-    } catch (error) {
-        res.status(500).json({ error: "Groq Connection Failed" });
+    } catch (e) {
+        res.status(500).json({ error: "Failed to communicate with Roty Engine." });
     }
 }

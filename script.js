@@ -1,27 +1,88 @@
-const userInput = document.getElementById('user-input');
-const sendBtn = document.getElementById('send-btn');
-const chatViewport = document.getElementById('chat-viewport');
-const historyList = document.getElementById('history-list');
+// --- CONFIGURATION ---
+const firebaseConfig = {
+    apiKey: "YOUR_FIREBASE_API_KEY",
+    authDomain: "rotys-ai.firebaseapp.com",
+    projectId: "rotys-ai",
+    appId: "..."
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 
 // --- STATE ---
 let currentChatId = null;
 let allChats = JSON.parse(localStorage.getItem('roty_chats')) || [];
+let isLoginMode = true;
 
-// --- IDENTITY ---
-const IDENTITY = "I am Roty's AI, a multi-modal assistant. I use the Groq engine for reasoning and Pollinations for image generation.";
+// --- AUTH UI LOGIC ---
+const authOverlay = document.getElementById('auth-overlay');
+const btnMainAuth = document.getElementById('btn-main-auth');
+const btnSwitchAuth = document.getElementById('btn-switch-auth');
+const subtitle = document.getElementById('auth-subtitle');
+const toggleMsg = document.getElementById('toggle-msg');
+const errorMsg = document.getElementById('auth-error');
+
+btnSwitchAuth.onclick = () => {
+    isLoginMode = !isLoginMode;
+    btnMainAuth.innerText = isLoginMode ? "Sign In" : "Create Account";
+    subtitle.innerText = isLoginMode ? "Welcome back! Sign in to continue." : "Join Roty's AI Studio today.";
+    toggleMsg.innerText = isLoginMode ? "Don't have an account?" : "Already have an account?";
+    btnSwitchAuth.innerText = isLoginMode ? "Create Account" : "Sign In";
+};
+
+btnMainAuth.onclick = async () => {
+    const email = document.getElementById('auth-email').value;
+    const pass = document.getElementById('auth-pass').value;
+    errorMsg.style.display = 'none';
+
+    try {
+        if (isLoginMode) {
+            await auth.signInWithEmailAndPassword(email, pass);
+        } else {
+            await auth.createUserWithEmailAndPassword(email, pass);
+        }
+        authOverlay.style.display = 'none';
+    } catch (err) {
+        errorMsg.innerText = err.message;
+        errorMsg.style.display = 'block';
+    }
+};
+
+auth.onAuthStateChanged(user => {
+    if (user) {
+        authOverlay.style.display = 'none';
+        document.getElementById('user-display-email').innerText = user.email;
+        document.getElementById('user-initial').innerText = user.email[0].toUpperCase();
+        document.getElementById('logout-btn').style.display = 'block';
+    }
+});
+
+function handleLogout() { auth.signOut().then(() => location.reload()); }
+function closeAuth() { authOverlay.style.display = 'none'; }
+
+// --- THEME ---
+function toggleTheme() {
+    const html = document.documentElement;
+    const theme = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', theme);
+}
+
+// --- CHAT ENGINE ---
+const chatViewport = document.getElementById('chat-viewport');
+const userInput = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
+const historyList = document.getElementById('history-list');
 
 function init() {
     renderHistory();
-    if (allChats.length > 0) loadChat(allChats[0].id);
-    else startNewChat();
+    startNewChat();
 }
 
 function startNewChat() {
     currentChatId = Date.now();
     chatViewport.innerHTML = `
-        <div class="welcome-hero">
-            <h1 class="gradient-text">Hello. I am Roty's AI.</h1>
-            <p>I can help you code, write, and generate stunning art.</p>
+        <div class="welcome-hero" id="welcome-hero">
+            <h1 class="shimmer-text">Design. Code. Create.</h1>
+            <p>Experience the future of Roty's AI Studio.</p>
         </div>`;
     renderHistory();
 }
@@ -30,112 +91,82 @@ async function handleSend() {
     const text = userInput.value.trim();
     if (!text) return;
 
-    // UI Cleanup
-    const hero = document.getElementById('welcome-hero');
-    if (hero) hero.remove();
+    if (document.getElementById('welcome-hero')) document.getElementById('welcome-hero').remove();
 
     appendMessage('user', text);
     userInput.value = '';
     userInput.style.height = 'auto';
 
-    // 1. CHECK FOR IMAGE REQUEST
-    const artWords = ["draw", "photo", "image", "generate", "art", "picture", "paint"];
-    const isArt = artWords.some(word => text.toLowerCase().includes(word));
-
-    if (isArt) {
-        const aiMsgId = appendMessage('ai', '🎨 Roty is painting...');
-        const aiMsgDiv = document.getElementById(aiMsgId);
-        
-        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(text)}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random()*1000)}`;
-        
+    // Image logic
+    const artKeywords = ["draw", "image", "generate", "photo", "art"];
+    if (artKeywords.some(w => text.toLowerCase().includes(w))) {
+        const id = appendMessage('ai', '<span class="pulse-dot"></span> Painting your visualization...');
+        const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(text)}?width=1024&height=1024&nologo=true&seed=${Date.now()}`;
         setTimeout(() => {
-            aiMsgDiv.innerHTML = `
-                <div class="image-box">
-                    <p>I've generated this for you:</p>
-                    <img src="${imageUrl}" style="width: 100%; border-radius: 15px; margin-top: 15px; border: 1px solid #333;">
+            document.getElementById(id).innerHTML = `
+                <div class="img-wrapper">
+                    <img src="${url}" style="width:100%; border-radius:16px; margin-top:16px; border:1px solid var(--border);">
                 </div>`;
             saveChat(text, "[Generated Image]");
-        }, 2000);
+        }, 3000);
         return;
     }
 
-    // 2. TEXT REQUEST (GROQ)
-    const aiMsgId = appendMessage('ai', '<span class="pulse">Thinking...</span>');
-    const aiMsgDiv = document.getElementById(aiMsgId);
-
+    // Text logic (Groq)
+    const aiId = appendMessage('ai', '<span class="pulse-dot"></span> Processing neural response...');
     try {
-        const response = await fetch('/api/chat', {
+        const res = await fetch('/api/chat', {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ prompt: text })
         });
-        
-        const data = await response.json();
-        const responseText = data.text || "No response.";
-        
-        // Use Marked.js to render organized Markdown
-        aiMsgDiv.innerHTML = marked.parse(responseText);
-        saveChat(text, responseText);
+        const data = await res.json();
+        document.getElementById(aiId).innerHTML = marked.parse(data.text);
+        saveChat(text, data.text);
     } catch (e) {
-        aiMsgDiv.innerText = "Error connecting to Roty Engine.";
+        document.getElementById(aiId).innerText = "Engine Error. Try again.";
     }
-    chatViewport.scrollTop = chatViewport.scrollHeight;
 }
 
-function saveChat(userText, aiText) {
-    let chat = allChats.find(c => c.id === currentChatId);
-    if (!chat) {
-        chat = { id: currentChatId, title: userText.substring(0, 30) + "...", messages: [] };
-        allChats.unshift(chat);
-    }
-    chat.messages.push({ role: 'user', content: userText }, { role: 'ai', content: aiText });
-    localStorage.setItem('roty_chats', JSON.stringify(allChats));
-    renderHistory();
-}
-
-function renderHistory() {
-    historyList.innerHTML = '<p class="label">Recent Conversations</p>';
-    allChats.forEach(chat => {
-        const div = document.createElement('div');
-        div.className = `history-item ${chat.id === currentChatId ? 'active' : ''}`;
-        div.innerHTML = `<i class="far fa-comment"></i> ${chat.title}`;
-        div.onclick = () => loadChat(chat.id);
-        historyList.appendChild(div);
-    });
-}
-
-function loadChat(id) {
-    currentChatId = id;
-    const chat = allChats.find(c => c.id === id);
-    chatViewport.innerHTML = '';
-    chat.messages.forEach(msg => appendMessage(msg.role, msg.content));
-    renderHistory();
-}
-
-function appendMessage(role, text) {
-    const id = "msg-" + Math.random().toString(36).substr(2, 9);
+function appendMessage(role, content) {
+    const id = "msg-" + Math.random();
     const div = document.createElement('div');
     div.className = `message ${role === 'user' ? 'user-msg' : 'ai-msg'}`;
     div.id = id;
-    
-    // Check if it's AI message and needs parsing
-    if (role === 'ai' && text !== 'Thinking...') {
-        div.innerHTML = marked.parse(text);
-    } else {
-        div.innerText = text;
-    }
-
+    div.innerHTML = role === 'ai' && content.includes('<span') ? content : (role === 'ai' ? marked.parse(content) : content);
     chatViewport.appendChild(div);
     chatViewport.scrollTop = chatViewport.scrollHeight;
     return id;
 }
 
-// UI HELPERS
-function quickPrompt(t) { userInput.value = t; handleSend(); }
-function toggleSidebar() { document.querySelector('.sidebar').classList.toggle('collapsed'); }
-document.getElementById('login-trigger').onclick = () => document.getElementById('auth-modal').style.display = 'flex';
-function closeAuth() { document.getElementById('auth-modal').style.display = 'none'; }
+function saveChat(u, a) {
+    let chat = allChats.find(c => c.id === currentChatId);
+    if (!chat) {
+        chat = { id: currentChatId, title: u.substring(0, 30) + "...", msgs: [] };
+        allChats.unshift(chat);
+    }
+    chat.msgs.push({ role: 'user', text: u }, { role: 'ai', text: a });
+    localStorage.setItem('roty_chats', JSON.stringify(allChats));
+    renderHistory();
+}
 
+function renderHistory() {
+    historyList.innerHTML = '';
+    allChats.forEach(c => {
+        const d = document.createElement('div');
+        d.className = `history-item ${c.id === currentChatId ? 'active' : ''}`;
+        d.innerHTML = `<i class="far fa-message"></i> ${c.title}`;
+        d.onclick = () => {
+            currentChatId = c.id;
+            chatViewport.innerHTML = '';
+            c.msgs.forEach(m => appendMessage(m.role, m.text));
+            renderHistory();
+        };
+        historyList.appendChild(d);
+    });
+}
+
+function quickPrompt(t) { userInput.value = t; handleSend(); }
 sendBtn.onclick = handleSend;
 userInput.onkeydown = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }};
 userInput.oninput = function() { this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px'; };
