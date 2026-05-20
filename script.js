@@ -8,7 +8,7 @@ const clearHistoryBtn = document.getElementById('clear-history');
 let currentChatId = null;
 let allChats = JSON.parse(localStorage.getItem('roty_chats')) || [];
 
-const IDENTITY = "I am Roty's AI Pro, the advanced version of Roty's neural network. I was launched in May 2024 to provide high-level reasoning, coding help, and creative solutions.";
+const IDENTITY = "I am Roty's AI, a fast and smart assistant. I was launched in May 2024 to help you with anything you need!";
 
 function init() {
     renderHistory();
@@ -23,8 +23,8 @@ function startNewChat() {
     currentChatId = Date.now();
     chatFlow.innerHTML = `
         <div class="welcome-hero">
-            <h2 class="gradient-text">Roty's AI Pro</h2>
-            <p>Pro engine is online. What can we build today?</p>
+            <h2 class="gradient-text">Roty's AI</h2>
+            <p>I'm ready. What's on your mind?</p>
         </div>`;
     document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
 }
@@ -40,7 +40,7 @@ async function handleSend() {
     userInput.value = '';
     userInput.style.height = 'auto';
 
-    const aiMsgId = appendMessage('ai', 'Roty Pro is processing...');
+    const aiMsgId = appendMessage('ai', 'Thinking...');
     const aiMsgDiv = document.getElementById(aiMsgId);
     
     let responseText = "";
@@ -58,14 +58,14 @@ async function handleSend() {
             const data = await response.json();
 
             if (data.error) {
-                responseText = "Pro Error: " + data.error;
+                responseText = "Error: " + data.error;
             } else if (data.candidates && data.candidates[0].content.parts[0].text) {
                 responseText = data.candidates[0].content.parts[0].text;
             } else {
-                responseText = "The Pro engine returned an empty response. Try rephrasing.";
+                responseText = "I couldn't process that. Try again.";
             }
         } catch (e) {
-            responseText = "Network error. Check your Vercel logs.";
+            responseText = "Network error. Please try again later.";
         }
     }
 
@@ -77,7 +77,7 @@ async function handleSend() {
 function saveChat(userText, aiText) {
     let chat = allChats.find(c => c.id === currentChatId);
     if (!chat) {
-        chat = { id: currentChatId, title: userText.substring(0, 35) + "...", messages: [] };
+        chat = { id: currentChatId, title: userText.substring(0, 30) + "...", messages: [] };
         allChats.unshift(chat);
     }
     chat.messages.push({ role: 'user', content: userText }, { role: 'ai', content: aiText });
