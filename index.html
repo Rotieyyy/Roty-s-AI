@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roty's AI</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">R</div>
+                <h1>Roty's AI</h1>
+            </div>
+
+            <button class="new-chat-btn" id="new-chat-btn">
+                <i class="fas fa-plus"></i> New Chat
+            </button>
+
+            <div class="history-section">
+                <p class="section-label">Recent History</p>
+                <div id="history-list" class="history-list">
+                    <!-- History items injected here -->
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <button id="clear-history" class="clear-btn"><i class="fas fa-trash-alt"></i> Clear All</button>
+                <div class="status-box">
+                    <span class="dot"></span> System Online
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-container">
+            <div id="chat-flow" class="chat-flow">
+                <div class="welcome-hero" id="welcome-screen">
+                    <h2 class="gradient-text">Roty's AI</h2>
+                    <p>Your workspace is ready. How can I help you today?</p>
+                </div>
+            </div>
+
+            <div class="input-section">
+                <div class="input-capsule">
+                    <textarea id="user-input" placeholder="Message Roty's AI..." rows="1"></textarea>
+                    <div class="controls">
+                        <button id="send-btn"><i class="fas fa-arrow-up"></i></button>
+                    </div>
+                </div>
+                <p class="disclaimer">Roty's AI v1.0 • Launched May 2024</p>
+            </div>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
