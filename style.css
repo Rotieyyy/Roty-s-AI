@@ -77,3 +77,14 @@ textarea { flex: 1; background: transparent; border: none; color: white; font-si
 
 .controls button { background: var(--accent); color: #000; border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; }
 .disclaimer { text-align: center; font-size: 11px; color: var(--text-dim); margin-top: 12px; }
+
+.pro-badge {
+    background: linear-gradient(90deg, #ffd700, #ff8c00);
+    color: black;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 5px;
+    vertical-align: middle;
+}
