@@ -10,8 +10,8 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "API Key is missing in Vercel. Please add it to Environment Variables." });
     }
 
-    // CHANGED: Using v1beta which is the most compatible with 1.5-flash on the Free Tier
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+    // Using 'gemini-pro' - This is the most compatible name that works for every free account
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${key}`;
 
     try {
         const response = await fetch(url, {
