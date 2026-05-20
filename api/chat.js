@@ -7,30 +7,46 @@ export default async function handler(req, res) {
     const key = process.env.GEMINI_API_KEY;
 
     if (!key) {
-        return res.status(500).json({ error: "API Key is missing in Vercel. Please add it to Environment Variables." });
+        return res.status(500).json({ error: "API Key missing in Vercel settings." });
     }
 
-    // Using 'gemini-pro' - This is the most compatible name that works for every free account
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${key}`;
+    // List of models to try in order of best to most compatible
+    const models = [
+        "gemini-1.5-flash-latest",
+        "gemini-1.5-flash",
+        "gemini-pro"
+    ];
 
-    try {
-        const response = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            })
-        });
+    let lastError = "";
 
-        const data = await response.json();
+    for (const modelName of models) {
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`;
+            
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
 
-        // Check for errors from Google
-        if (data.error) {
-            return res.status(400).json({ error: data.error.message });
+            const data = await response.json();
+
+            // If this model works, send the response and STOP the loop
+            if (response.ok && data.candidates && data.candidates[0].content.parts[0].text) {
+                return res.status(200).json(data);
+            }
+            
+            // If it didn't work, save the error and try the next model in the list
+            lastError = data.error ? data.error.message : "Unknown error";
+            console.log(`Model ${modelName} failed, trying next...`);
+
+        } catch (err) {
+            lastError = err.message;
         }
-
-        res.status(200).json(data);
-    } catch (error) {
-        res.status(500).json({ error: "Connection error: " + error.message });
     }
+
+    // If we get here, it means NONE of the models worked
+    res.status(400).json({ error: "All free models failed. Last error: " + lastError });
 }
