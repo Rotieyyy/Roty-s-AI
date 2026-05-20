@@ -3,38 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roty's AI</title>
+    <title>Roty's AI | Workspace</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Markdown Parser for professional code blocks -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
     <div class="app-shell">
+        <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="brand">
-                <div class="brand-icon">R</div>
-                <h1>Roty's AI</h1>
+            <div class="sidebar-top">
+                <div class="logo">
+                    <div class="logo-box">R</div>
+                    <span>Roty's AI</span>
+                </div>
+                <button class="btn-new-chat" onclick="startNewChat()">
+                    <i class="fas fa-plus"></i> <span>New Chat</span>
+                </button>
             </div>
-            <button class="new-chat-btn" id="new-chat-btn"><i class="fas fa-plus"></i> New Chat</button>
-            <div class="history-section">
-                <p class="section-label">Recent</p>
-                <div id="history-list" class="history-list"></div>
+
+            <div class="history-list" id="history-list">
+                <p class="label">Recent Conversations</p>
+                <!-- History Items Inject Here -->
             </div>
-            <div class="sidebar-footer">
-                <button id="clear-history" class="clear-btn"><i class="fas fa-trash"></i> Clear All</button>
-                <div class="status-box"><span class="dot pulse"></span> Online</div>
+
+            <div class="sidebar-bottom">
+                <div class="user-pill" id="login-trigger">
+                    <img src="https://ui-avatars.com/api/?name=User&background=8ab4f8&color=000" alt="User">
+                    <div class="user-text">
+                        <p class="name">Guest Developer</p>
+                        <p class="status">Click to Sign In</p>
+                    </div>
+                </div>
             </div>
         </aside>
-        <main class="main-container">
-            <div id="chat-flow" class="chat-flow"></div>
-            <div class="input-section">
-                <div class="input-capsule">
-                    <textarea id="user-input" placeholder="Message Roty's AI..." rows="1"></textarea>
-                    <div class="controls"><button id="send-btn"><i class="fas fa-arrow-up"></i></button></div>
+
+        <!-- Main Workspace -->
+        <main class="workspace">
+            <header class="top-nav">
+                <div class="nav-left">
+                    <span class="engine-status"><span class="dot pulse"></span> Roty Neural Online</span>
                 </div>
-                <p class="disclaimer">Roty's AI • Free Version</p>
+                <div class="nav-right">
+                    <i class="fas fa-circle-half-stroke"></i>
+                    <i class="fas fa-gear"></i>
+                </div>
+            </header>
+
+            <div class="chat-viewport" id="chat-viewport">
+                <div class="welcome-hero" id="welcome-hero">
+                    <h1 class="gradient-text">Hello. I am Roty's AI.</h1>
+                    <p>I can help you code, write, and generate stunning art.</p>
+                    <div class="suggest-row">
+                        <div class="chip" onclick="quickPrompt('Draw a neon city in the rain')">🎨 Draw a neon city</div>
+                        <div class="chip" onclick="quickPrompt('Write a Python script for a snake game')">💻 Write a game</div>
+                        <div class="chip" onclick="quickPrompt('Plan a 3-day trip to Boracay')">✈️ Plan a trip</div>
+                    </div>
+                </div>
             </div>
+
+            <footer class="input-hub">
+                <div class="input-container">
+                    <div class="input-top">
+                        <label for="file-input" class="icon-btn"><i class="fas fa-paperclip"></i></label>
+                        <input type="file" id="file-input" hidden accept="image/*,.pdf,.txt">
+                        <textarea id="user-input" placeholder="Ask Roty anything..." rows="1"></textarea>
+                    </div>
+                    <div class="input-bottom">
+                        <div class="tools">
+                            <i class="fas fa-wand-magic-sparkles" title="Art Mode Active"></i>
+                            <i class="fas fa-microchip" title="Logic Mode Active"></i>
+                        </div>
+                        <button id="send-btn" class="send-btn">
+                            <i class="fas fa-arrow-up"></i>
+                        </button>
+                    </div>
+                </div>
+                <p class="disclaimer">Roty's AI v1.5 • Credits to Groq & Pollinations</p>
+            </footer>
         </main>
     </div>
+
+    <!-- Simple Login Modal -->
+    <div class="modal" id="auth-modal">
+        <div class="modal-box">
+            <h2>Sign in to Roty's AI</h2>
+            <p>Save your history and sync across devices.</p>
+            <div class="auth-grid">
+                <button class="auth-btn"><i class="fab fa-google"></i> Google</button>
+                <button class="auth-btn"><i class="fab fa-facebook"></i> Facebook</button>
+            </div>
+            <button class="close-btn" onclick="closeAuth()">Maybe Later</button>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
