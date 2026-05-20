@@ -8,7 +8,7 @@ const clearHistoryBtn = document.getElementById('clear-history');
 let currentChatId = null;
 let allChats = JSON.parse(localStorage.getItem('roty_chats')) || [];
 
-const IDENTITY = "I am Roty's AI, a fast and smart assistant. I was launched in May 2024 to help you with anything you need!";
+const IDENTITY = "I am Roty's AI, a powerful and free assistant. I was launched in May 2024 to help you with any task!";
 
 function init() {
     renderHistory();
@@ -24,7 +24,7 @@ function startNewChat() {
     chatFlow.innerHTML = `
         <div class="welcome-hero">
             <h2 class="gradient-text">Roty's AI</h2>
-            <p>I'm ready. What's on your mind?</p>
+            <p>Welcome! How can I help you today?</p>
         </div>`;
     document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
 }
@@ -40,7 +40,7 @@ async function handleSend() {
     userInput.value = '';
     userInput.style.height = 'auto';
 
-    const aiMsgId = appendMessage('ai', 'Thinking...');
+    const aiMsgId = appendMessage('ai', 'Roty is thinking...');
     const aiMsgDiv = document.getElementById(aiMsgId);
     
     let responseText = "";
@@ -58,14 +58,14 @@ async function handleSend() {
             const data = await response.json();
 
             if (data.error) {
-                responseText = "Error: " + data.error;
+                responseText = "System Note: " + data.error;
             } else if (data.candidates && data.candidates[0].content.parts[0].text) {
                 responseText = data.candidates[0].content.parts[0].text;
             } else {
-                responseText = "I couldn't process that. Try again.";
+                responseText = "I couldn't generate a response. Please try again.";
             }
         } catch (e) {
-            responseText = "Network error. Please try again later.";
+            responseText = "Connection error. Please refresh and try again.";
         }
     }
 
@@ -103,6 +103,7 @@ function loadChat(id) {
     chatFlow.innerHTML = '';
     chat.messages.forEach(msg => appendMessage(msg.role, msg.content));
     renderHistory();
+    chatFlow.scrollTop = chatFlow.scrollHeight;
 }
 
 function appendMessage(role, text) {
@@ -120,7 +121,7 @@ sendBtn.addEventListener('click', handleSend);
 userInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }});
 newChatBtn.addEventListener('click', startNewChat);
 clearHistoryBtn.addEventListener('click', () => {
-    if(confirm("Delete all history?")) { allChats = []; localStorage.removeItem('roty_chats'); startNewChat(); renderHistory(); }
+    if(confirm("Delete history?")) { allChats = []; localStorage.removeItem('roty_chats'); startNewChat(); renderHistory(); }
 });
 userInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px'; });
 
