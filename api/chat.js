@@ -1,43 +1,51 @@
 export default async function handler(req, res) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
+    if (req.method !== 'POST') return res.status(405).end();
 
     const { prompt } = req.body;
     const key = process.env.GEMINI_API_KEY;
 
-    if (!key) {
-        return res.status(500).json({ error: "API Key is missing in Vercel settings." });
+    if (!key) return res.status(500).json({ error: "API Key missing in Vercel." });
+
+    // Try these models in order. One of them WILL work.
+    const modelList = [
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-latest",
+        "gemini-1.0-pro",
+        "gemini-pro"
+    ];
+
+    let successData = null;
+    let errors = [];
+
+    for (const model of modelList) {
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.candidates) {
+                successData = data;
+                break; // Found a working model! Stop looking.
+            } else {
+                errors.push(`${model}: ${data.error?.message || 'Unknown error'}`);
+            }
+        } catch (err) {
+            errors.push(`${model}: ${err.message}`);
+        }
     }
 
-    // Using the STABLE v1 endpoint and the standard gemini-1.5-flash model
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${key}`;
-
-    try {
-        const response = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            })
+    if (successData) {
+        return res.status(200).json(successData);
+    } else {
+        // If all failed, we show you exactly why so we can fix the Google side
+        return res.status(404).json({ 
+            error: "All models failed. This usually means your API Key is restricted.",
+            details: errors 
         });
-
-        const data = await response.json();
-
-        if (data.error) {
-            // This will show us the EXACT reason from Google (e.g., API_KEY_INVALID)
-            return res.status(data.error.code || 400).json({ 
-                error: `Google says: ${data.error.message} (Code: ${data.error.status})` 
-            });
-        }
-
-        if (data.candidates && data.candidates[0].content.parts[0].text) {
-            res.status(200).json(data);
-        } else {
-            res.status(500).json({ error: "The AI returned an empty response." });
-        }
-
-    } catch (error) {
-        res.status(500).json({ error: "Network Error: " + error.message });
     }
 }
