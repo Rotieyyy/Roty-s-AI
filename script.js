@@ -129,7 +129,7 @@ function startNewChat() {
     chatViewport.innerHTML = `
         <div class="welcome-hero" id="welcome-hero">
             <div class="hero-logo"><i class="fas fa-layer-group"></i></div>
-            <h1 class="shimmer-text">Hello, Developer.</h1>
+            <h1 class="shimmer-text">Hello, I'm Roty's AI</h1>
             <p>What shall we build today?</p>
         </div>`;
 }
