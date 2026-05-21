@@ -10,11 +10,16 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 
+// Set up Providers (MUST BE ENABLED IN FIREBASE CONSOLE)
+const googleProvider = new firebase.auth.GoogleAuthProvider();
+const facebookProvider = new firebase.auth.FacebookAuthProvider();
+
 // --- STATE ---
 let currentChatId = null;
 let allChats = JSON.parse(localStorage.getItem('roty_chats')) || [];
 let isLoginMode = true;
 let currentImageData = null;
+let isGuest = false; // Tracks if user is in guest mode
 
 // --- AUTH UI LOGIC ---
 const authOverlay = document.getElementById('auth-overlay');
@@ -27,14 +32,46 @@ const successMsg = document.getElementById('auth-success');
 
 btnSwitchAuth.onclick = () => {
     isLoginMode = !isLoginMode;
-    btnMainAuth.innerText = isLoginMode ? "Sign In" : "Create Account";
+    btnMainAuth.innerText = isLoginMode ? "Sign In" : "Sign Up";
     subtitle.innerText = isLoginMode ? "Welcome back! Sign in to continue." : "Join Roty's AI Studio today.";
     toggleMsg.innerText = isLoginMode ? "Don't have an account?" : "Already have an account?";
-    btnSwitchAuth.innerText = isLoginMode ? "Create Account" : "Sign In";
+    btnSwitchAuth.innerText = isLoginMode ? "Sign Up" : "Sign In";
     errorMsg.style.display = 'none';
     successMsg.style.display = 'none';
 };
 
+// Forgot Password
+document.getElementById('btn-forgot-pass').onclick = async () => {
+    const email = document.getElementById('auth-email').value;
+    errorMsg.style.display = 'none';
+    successMsg.style.display = 'none';
+    
+    if (!email) {
+        errorMsg.innerText = "Please enter your email above to reset password.";
+        errorMsg.style.display = 'block';
+        return;
+    }
+    try {
+        await auth.sendPasswordResetEmail(email);
+        successMsg.innerText = "Password reset email sent! Check your inbox.";
+        successMsg.style.display = 'block';
+    } catch (err) {
+        errorMsg.innerText = err.message;
+        errorMsg.style.display = 'block';
+    }
+};
+
+// Social Logins
+document.getElementById('btn-google').onclick = async () => {
+    try { await auth.signInWithPopup(googleProvider); closeAuth(); } 
+    catch (err) { errorMsg.innerText = err.message; errorMsg.style.display = 'block'; }
+};
+document.getElementById('btn-facebook').onclick = async () => {
+    try { await auth.signInWithPopup(facebookProvider); closeAuth(); } 
+    catch (err) { errorMsg.innerText = err.message; errorMsg.style.display = 'block'; }
+};
+
+// Email Login / Signup
 btnMainAuth.onclick = async () => {
     const email = document.getElementById('auth-email').value;
     const pass = document.getElementById('auth-pass').value;
@@ -64,17 +101,31 @@ btnMainAuth.onclick = async () => {
 };
 
 auth.onAuthStateChanged(user => {
-    if (user && user.emailVerified) {
+    if (user && (user.emailVerified || user.providerData[0].providerId !== 'password')) {
+        isGuest = false;
         closeAuth();
-        document.getElementById('user-display-email').innerText = user.email;
-        document.getElementById('user-initial').innerText = user.email[0].toUpperCase();
+        document.getElementById('user-display-email').innerText = user.displayName || user.email;
+        document.getElementById('user-initial').innerText = (user.displayName || user.email)[0].toUpperCase();
         document.getElementById('logout-btn').style.display = 'block';
-    } else {
-        document.getElementById('user-display-email').innerText = "Guest Mode";
-        document.getElementById('user-initial').innerText = "G";
-        document.getElementById('logout-btn').style.display = 'none';
+        document.getElementById('logout-btn').innerText = "Sign Out";
+        document.getElementById('guest-history-msg').style.display = 'none';
+        allChats = JSON.parse(localStorage.getItem('roty_chats')) || [];
+        init();
     }
 });
+
+function useGuestMode() {
+    isGuest = true;
+    closeAuth();
+    document.getElementById('user-display-email').innerText = "Guest Mode";
+    document.getElementById('user-initial').innerText = "G";
+    document.getElementById('logout-btn').style.display = 'block';
+    document.getElementById('logout-btn').innerText = "Sign In";
+    document.getElementById('guest-history-msg').style.display = 'block';
+    
+    allChats = []; // Guests get a fresh instance
+    init();
+}
 
 function handleLogout() { 
     auth.signOut().then(() => {
@@ -82,8 +133,21 @@ function handleLogout() {
     }); 
 }
 
-function closeAuth() { 
-    authOverlay.classList.add('hidden'); 
+function closeAuth() { authOverlay.classList.add('hidden'); }
+
+// --- MOBILE SIDEBAR ---
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobile-sidebar-overlay');
+    if (sidebar.classList.contains('mobile-open')) {
+        sidebar.classList.remove('mobile-open');
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.style.display = 'none', 300);
+    } else {
+        sidebar.classList.add('mobile-open');
+        overlay.style.display = 'block';
+        setTimeout(() => overlay.style.opacity = '1', 10);
+    }
 }
 
 // --- THEME ---
@@ -132,6 +196,7 @@ function startNewChat() {
             <h1 class="shimmer-text">Hello, I'm Roty's AI.</h1>
             <p>What shall we build today?</p>
         </div>`;
+    if(window.innerWidth <= 768) toggleSidebar(); // auto close on mobile when starting
 }
 
 async function handleSend() {
@@ -174,6 +239,7 @@ async function handleSend() {
         });
         const data = await res.json();
         document.getElementById(aiId).innerHTML = marked.parse(data.text);
+        addCopyButtons(document.getElementById(aiId)); // Add copy buttons to code
         updateLastAiResponse(data.text);
     } catch (e) {
         document.getElementById(aiId).innerText = "Engine Error. Check connection.";
@@ -192,6 +258,7 @@ function appendMessage(role, content) {
             div.innerHTML = content;
         } else {
             div.innerHTML = marked.parse(content);
+            addCopyButtons(div); // Catch history loads
         }
     } else {
         div.innerHTML = content;
@@ -202,7 +269,38 @@ function appendMessage(role, content) {
     return id;
 }
 
+// Intercepts code blocks and adds a copy button
+function addCopyButtons(container) {
+    const preBlocks = container.querySelectorAll('pre');
+    preBlocks.forEach(pre => {
+        if (pre.querySelector('.code-header')) return; // skip if already added
+        
+        const codeText = pre.innerText;
+        const header = document.createElement('div');
+        header.className = 'code-header';
+        
+        // Detect basic language if possible
+        const langClass = pre.querySelector('code')?.className || '';
+        const lang = langClass.replace('language-', '') || 'Code';
+
+        header.innerHTML = `<span>${lang}</span><button class="copy-btn"><i class="far fa-copy"></i> Copy</button>`;
+        
+        header.querySelector('.copy-btn').onclick = function() {
+            navigator.clipboard.writeText(pre.querySelector('code') ? pre.querySelector('code').innerText : codeText);
+            this.innerHTML = `<i class="fas fa-check"></i> Copied!`;
+            this.style.color = 'var(--accent)';
+            setTimeout(() => {
+                this.innerHTML = `<i class="far fa-copy"></i> Copy`;
+                this.style.color = '';
+            }, 2000);
+        };
+        pre.insertBefore(header, pre.firstChild);
+    });
+}
+
 function saveChat(userText, aiText) {
+    if (isGuest) return; // Do not save history for guests
+
     let chat = allChats.find(c => c.id === currentChatId);
     if (!chat) {
         const cleanTitle = userText.replace(/<[^>]*>?/gm, '');
@@ -218,6 +316,8 @@ function saveChat(userText, aiText) {
 }
 
 function updateLastAiResponse(aiText) {
+    if (isGuest) return; 
+
     let chat = allChats.find(c => c.id === currentChatId);
     if (chat) {
         chat.msgs.push({ role: 'ai', text: aiText });
@@ -228,6 +328,8 @@ function updateLastAiResponse(aiText) {
 // --- HISTORY MANAGEMENT ---
 function renderHistory() {
     historyList.innerHTML = '';
+    if (isGuest) return; // Don't render list for guests
+
     allChats.forEach((c, index) => {
         const d = document.createElement('div');
         d.className = `history-item ${c.id === currentChatId ? 'active' : ''}`;
@@ -251,6 +353,7 @@ function loadChat(id) {
         chat.msgs.forEach(m => appendMessage(m.role, m.text));
     }
     renderHistory();
+    if(window.innerWidth <= 768) toggleSidebar();
 }
 
 function deleteChat(index) {
@@ -274,5 +377,3 @@ function deleteAllHistory() {
 sendBtn.onclick = handleSend;
 userInput.onkeydown = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }};
 userInput.oninput = function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight > 200 ? 200 : this.scrollHeight) + 'px'; };
-
-init();

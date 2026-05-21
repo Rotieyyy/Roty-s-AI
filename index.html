@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roty's AI | Studio</title>
+    
+    <meta name="title" content="Roty's AI | Studio">
+    <meta name="description" content="Hi, I'm Roty's AI, a custom neural engine developed by Roty. Join the studio to chat with advanced AI, debug code, generate stunning visual art, and build your next big project. What shall we create today?">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://roty-s-ai.vercel.app/">
+    <meta property="og:title" content="Roty's AI | Studio">
+    <meta property="og:description" content="Hi, I'm Roty's AI, a custom neural engine developed by Roty. Join the studio to chat with advanced AI, debug code, generate stunning visual art, and build your next big project. What shall we create today?">
+    <meta property="og:image" content="https://roty-s-ai.vercel.app/rotyai.jpg">
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://roty-s-ai.vercel.app/">
+    <meta property="twitter:title" content="Roty's AI | Studio">
+    <meta property="twitter:description" content="Hi, I'm Roty's AI, a custom neural engine developed by Roty. Join the studio to chat with advanced AI, debug code, generate stunning visual art, and build your next big project. What shall we create today?">
+    <meta property="twitter:image" content="https://roty-s-ai.vercel.app/rotyai.jpg">
+
+    <link rel="icon" type="image/x-icon" href="rotyai.ico">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -18,6 +35,13 @@
             </div>
             
             <div class="auth-body">
+                <div class="social-auth-group">
+                    <button id="btn-google" class="auth-social-btn"><i class="fab fa-google"></i> Continue with Google</button>
+                    <button id="btn-facebook" class="auth-social-btn"><i class="fab fa-facebook-f"></i> Continue with Facebook</button>
+                </div>
+                
+                <div class="auth-divider"><span>OR EMAIL</span></div>
+
                 <div class="input-field">
                     <i class="fas fa-envelope"></i>
                     <input type="email" id="auth-email" placeholder="Email Address">
@@ -27,22 +51,26 @@
                     <input type="password" id="auth-pass" placeholder="Password">
                 </div>
                 
+                <div class="forgot-pass-wrapper">
+                    <button id="btn-forgot-pass" class="forgot-pass-link">Forgot Password?</button>
+                </div>
+                
                 <div id="auth-error" class="error-msg"></div>
                 <div id="auth-success" class="success-msg" style="display:none; color: var(--accent); font-size: 13px; margin-bottom: 15px;"></div>
 
                 <button id="btn-main-auth" class="auth-primary">Sign In</button>
                 
                 <div class="auth-divider">
-                    <span>OR</span>
+                    <span>CREATE</span>
                 </div>
 
                 <div class="auth-toggle-text">
                     <span id="toggle-msg">Don't have an account?</span>
-                    <button id="btn-switch-auth">Create Account</button>
+                    <button id="btn-switch-auth">Sign Up</button>
                 </div>
             </div>
             
-            <button class="guest-access" onclick="closeAuth()">Use Guest Mode</button>
+            <button class="guest-access" onclick="useGuestMode()">Use Guest Mode</button>
         </div>
     </div>
 
@@ -52,6 +80,7 @@
                 <div class="brand">
                     <div class="brand-icon">R</div>
                     <span>Roty's AI</span>
+                    <button class="mobile-close-btn" onclick="toggleSidebar()"><i class="fas fa-times"></i></button>
                 </div>
                 <button class="new-chat-btn" onclick="startNewChat()">
                     <i class="fas fa-plus"></i> <span>New Chat</span>
@@ -64,6 +93,9 @@
                     <button class="clear-all-btn" onclick="deleteAllHistory()">Clear All</button>
                 </div>
                 <div id="history-list"></div>
+                <div id="guest-history-msg" style="display:none; font-size: 12px; color: var(--text-dim); text-align: center; padding: 20px;">
+                    History is disabled in Guest Mode. Sign in to save chats.
+                </div>
             </div>
 
             <div class="sidebar-bottom">
@@ -81,6 +113,8 @@
                 </div>
             </div>
         </aside>
+
+        <div id="mobile-sidebar-overlay" onclick="toggleSidebar()"></div>
 
         <main class="main-workspace">
             <header class="top-nav">
