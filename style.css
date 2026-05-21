@@ -41,7 +41,6 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
 .auth-social-btn { background: var(--input); color: var(--text); border: 1px solid var(--border); padding: 12px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; font-size: 14px; transition: all 0.2s ease; }
 .auth-social-btn:hover { background: var(--border); }
 #btn-google i { color: #DB4437; }
-#btn-facebook i { color: #1877F2; }
 
 .input-field { background: var(--input); border: 2px solid transparent; border-radius: 12px; display: flex; align-items: center; padding: 0 16px; margin-bottom: 16px; transition: all 0.3s ease; }
 .input-field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15); }

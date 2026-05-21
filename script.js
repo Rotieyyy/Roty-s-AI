@@ -10,9 +10,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 
-// Set up Providers (MUST BE ENABLED IN FIREBASE CONSOLE)
+// Set up Providers
 const googleProvider = new firebase.auth.GoogleAuthProvider();
-const facebookProvider = new firebase.auth.FacebookAuthProvider();
 
 // --- STATE ---
 let currentChatId = null;
@@ -61,13 +60,9 @@ document.getElementById('btn-forgot-pass').onclick = async () => {
     }
 };
 
-// Social Logins
+// Social Logins (Google)
 document.getElementById('btn-google').onclick = async () => {
     try { await auth.signInWithPopup(googleProvider); closeAuth(); } 
-    catch (err) { errorMsg.innerText = err.message; errorMsg.style.display = 'block'; }
-};
-document.getElementById('btn-facebook').onclick = async () => {
-    try { await auth.signInWithPopup(facebookProvider); closeAuth(); } 
     catch (err) { errorMsg.innerText = err.message; errorMsg.style.display = 'block'; }
 };
 
