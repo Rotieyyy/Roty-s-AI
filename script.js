@@ -185,62 +185,34 @@ async function handleSend() {
     if (!text && !currentImageData) return;
     if (document.getElementById('welcome-hero')) document.getElementById('welcome-hero').remove();
 
-    // 1. Capture the image data safely BEFORE we clear the UI
+    // Capture the compressed image data before clearing the UI
     const imageToSend = currentImageData;
 
-    let userMessageHTML = text;
-    if (imageToSend) { 
-        userMessageHTML = `<img src="${imageToSend}" style="max-width: 200px; border-radius: 8px; margin-bottom: 10px; display: block;">` + text; 
-    }
-    
-    appendMessage('user', userMessageHTML);
-    saveChat(userMessageHTML, null); 
+    appendMessage('user', imageToSend ? `<img src="${imageToSend}" style="max-width:200px">` + text : text);
+    saveChat(text, null); 
+    userInput.value = ''; clearImageUpload();
 
-    // Now it is safe to clear the UI input box
-    userInput.value = ''; 
-    userInput.style.height = 'auto'; 
-    clearImageUpload();
-
+    // ART MODE: Skip the API chat completely and go to the generator
     if (isArtMode) {
-        const id = appendMessage('ai', '<div class="typing-indicator"><span></span><span></span><span></span></div> Generating art...');
-        const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(text)}?width=1024&height=1024&nologo=true&seed=${Date.now()}`;
-        setTimeout(() => {
-            const finalHtml = `<div class="img-wrapper"><img src="${url}" style="width:100%; border-radius:12px; margin-top:8px; border:1px solid var(--border);"></div>`;
-            document.getElementById(id).innerHTML = finalHtml;
-            updateLastAiResponse(finalHtml);
-            saveImageToGallery(url, text); 
-        }, 3000);
-        return; 
+        const id = appendMessage('ai', 'Generating art...');
+        const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(text)}?seed=${Date.now()}`;
+        document.getElementById(id).innerHTML = `<img src="${url}" style="width:100%">`;
+        saveImageToGallery(url, text);
+        return;
     }
 
-    const aiId = appendMessage('ai', '<div class="typing-indicator"><span></span><span></span><span></span></div>');
-    
-    let chatSession = allChats.find(c => c.id === currentChatId);
-    let chatHistory = [];
-    if (chatSession && chatSession.msgs) {
-        chatHistory = chatSession.msgs.map(m => ({
-            role: m.role === 'ai' ? 'assistant' : 'user',
-            content: m.text
-        }));
-    }
-
+    // CHAT MODE: Send to backend with explicit 'mode' parameter
+    const aiId = appendMessage('ai', '<div class="typing-indicator"></div>');
     try {
         const res = await fetch('/api/chat', {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                prompt: text,
-                history: chatHistory,
-                image: imageToSend // Send the safely captured image
-            })
+            body: JSON.stringify({ prompt: text, history: [], image: imageToSend, mode: 'chat' })
         });
         const data = await res.json();
         document.getElementById(aiId).innerHTML = marked.parse(data.text);
-        addCopyButtons(document.getElementById(aiId)); 
-        updateLastAiResponse(data.text);
     } catch (e) {
-        document.getElementById(aiId).innerText = "Engine Error. Check connection.";
-        updateLastAiResponse("Engine Error. Check connection.");
+        document.getElementById(aiId).innerText = "Connection Error: " + e.message;
     }
 }
 
@@ -344,33 +316,18 @@ function toggleTheme() { const html = document.documentElement; const theme = ht
 
 // --- SMART IMAGE UPLOADER & COMPRESSOR ---
 document.getElementById('img-upload').addEventListener('change', function(e) { 
-    const file = e.target.files[0]; 
-    if (!file) return;
-
+    const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader(); 
     reader.onload = function(event) { 
-        // Create a temporary invisible image
         const img = new Image();
         img.onload = function() {
-            // Create an invisible canvas to resize the photo
             const canvas = document.createElement('canvas');
-            
-            // Shrink the image to a maximum of 800px wide (Perfect for AI Vision)
             const MAX_WIDTH = 800;
-            let scaleSize = MAX_WIDTH / img.width;
-            if (scaleSize > 1) scaleSize = 1; // Don't upscale small images
-            
-            canvas.width = img.width * scaleSize;
-            canvas.height = img.height * scaleSize;
-            
-            // Draw the compressed image onto the canvas
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            
-            // Convert back to Base64, but as a lightweight JPEG at 70% quality
+            let scale = MAX_WIDTH / img.width;
+            if (scale > 1) scale = 1;
+            canvas.width = img.width * scale; canvas.height = img.height * scale;
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
             currentImageData = canvas.toDataURL('image/jpeg', 0.7);
-            
-            // Show the preview in the UI
             document.getElementById('image-preview').src = currentImageData; 
             document.getElementById('image-preview-container').style.display = 'flex'; 
         };
