@@ -6,26 +6,16 @@
     <title>Roty's AI | Studio</title>
     
     <meta name="title" content="Roty's AI | Studio">
-    <meta name="description" content="Hi, I'm Roty's AI, a custom neural engine developed by Roty. Join the studio to chat with advanced AI, debug code, generate stunning visual art, and build your next big project. What shall we create today?">
-
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://roty-s-ai.vercel.app/">
-    <meta property="og:title" content="Roty's AI | Studio">
-    <meta property="og:description" content="Hi, I'm Roty's AI, a custom neural engine developed by Roty. Join the studio to chat with advanced AI, debug code, generate stunning visual art, and build your next big project. What shall we create today?">
-    <meta property="og:image" content="https://roty-s-ai.vercel.app/rotyai.jpg">
-
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://roty-s-ai.vercel.app/">
-    <meta property="twitter:title" content="Roty's AI | Studio">
-    <meta property="twitter:description" content="Hi, I'm Roty's AI, a custom neural engine developed by Roty. Join the studio to chat with advanced AI, debug code, generate stunning visual art, and build your next big project. What shall we create today?">
-    <meta property="twitter:image" content="https://roty-s-ai.vercel.app/rotyai.jpg">
-
+    <meta name="description" content="Hi, I'm Roty's AI, a custom neural engine developed by Roty.">
+    
     <link rel="icon" type="image/x-icon" href="rotyai.ico">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
+    <div id="toast-container" class="toast-container"></div>
+
     <div id="auth-overlay" class="auth-overlay">
         <div class="auth-glass-card">
             <div class="auth-header">
@@ -33,43 +23,78 @@
                 <h1 class="gradient-text">Roty's AI</h1>
                 <p id="auth-subtitle">Welcome back! Sign in to continue.</p>
             </div>
-            
             <div class="auth-body">
                 <div class="social-auth-group">
                     <button id="btn-google" class="auth-social-btn"><i class="fab fa-google"></i> Continue with Google</button>
                 </div>
-                
                 <div class="auth-divider"><span>OR EMAIL</span></div>
-
-                <div class="input-field">
-                    <i class="fas fa-envelope"></i>
-                    <input type="email" id="auth-email" placeholder="Email Address">
-                </div>
-                <div class="input-field">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="auth-pass" placeholder="Password">
-                </div>
-                
-                <div class="forgot-pass-wrapper">
-                    <button id="btn-forgot-pass" class="forgot-pass-link">Forgot Password?</button>
-                </div>
-                
+                <div class="input-field"><i class="fas fa-envelope"></i><input type="email" id="auth-email" placeholder="Email Address"></div>
+                <div class="input-field"><i class="fas fa-lock"></i><input type="password" id="auth-pass" placeholder="Password"></div>
+                <div class="forgot-pass-wrapper"><button id="btn-forgot-pass" class="forgot-pass-link">Forgot Password?</button></div>
                 <div id="auth-error" class="error-msg"></div>
                 <div id="auth-success" class="success-msg" style="display:none; color: var(--accent); font-size: 13px; margin-bottom: 15px;"></div>
-
                 <button id="btn-main-auth" class="auth-primary">Sign In</button>
-                
-                <div class="auth-divider">
-                    <span>CREATE</span>
-                </div>
+                <div class="auth-divider"><span>CREATE</span></div>
+                <div class="auth-toggle-text"><span id="toggle-msg">Don't have an account?</span><button id="btn-switch-auth">Sign Up</button></div>
+            </div>
+            <button class="guest-access" onclick="useGuestMode()">Use Guest Mode</button>
+        </div>
+    </div>
 
-                <div class="auth-toggle-text">
-                    <span id="toggle-msg">Don't have an account?</span>
-                    <button id="btn-switch-auth">Sign Up</button>
-                </div>
+    <div id="gallery-modal" class="auth-overlay hidden">
+        <div class="auth-glass-card" style="max-width: 800px; width: 90%; max-height: 85vh; display: flex; flex-direction: column; padding: 30px;">
+            <div class="auth-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 class="gradient-text" style="margin: 0; font-size: 24px;"><i class="fas fa-paint-brush"></i> Your Art Studio</h2>
+                <button onclick="toggleGallery()" style="background: none; border: none; color: var(--text-dim); font-size: 24px; cursor: pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="gallery-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; overflow-y: auto; padding-right: 10px; flex: 1;">
+                <p style="color: var(--text-dim); grid-column: 1 / -1; text-align: center; margin-top: 50px;">No images generated yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="dev-portal-modal" class="auth-overlay hidden">
+        <div class="auth-glass-card portal-card">
+            <div class="auth-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 class="gradient-text" style="margin: 0; font-size: 24px;"><i class="fas fa-code"></i> Developer Hub</h2>
+                <button onclick="toggleDevPortal()" style="background: none; border: none; color: var(--text-dim); font-size: 24px; cursor: pointer;"><i class="fas fa-times"></i></button>
             </div>
             
-            <button class="guest-access" onclick="useGuestMode()">Use Guest Mode</button>
+            <div class="portal-tabs">
+                <button class="tab-btn active" onclick="switchTab('tab-about')">About</button>
+                <button class="tab-btn" onclick="switchTab('tab-donate')">Support</button>
+                <button class="tab-btn" onclick="switchTab('tab-legal')">Legal</button>
+            </div>
+
+            <div class="portal-content">
+                <div id="tab-about" class="tab-pane active">
+                    <h3>Rod Troy N. Gaudan</h3>
+                    <p class="role-badge">BSIT Student & Lead Developer</p>
+                    <p style="font-size: 14px; color: var(--text-dim); line-height: 1.6; margin-top: 15px;">
+                        Welcome to my studio! I developed this custom AI engine as a comprehensive portfolio project bridging modern cloud infrastructure with intuitive frontend design. Beyond coding, I am passionate about photography, video editing, and digital content creation. This platform was built to merge creative workflows with high-speed AI assistance.
+                    </p>
+                    <p style="font-size: 13px; color: var(--accent); margin-top: 15px; font-weight: 600;">Powered by Groq, Vercel, and Firebase.</p>
+                </div>
+
+                <div id="tab-donate" class="tab-pane">
+                    <h3>Support the Developer</h3>
+                    <p style="font-size: 14px; color: var(--text-dim); margin-bottom: 20px;">If this AI helped you out with your code or art, consider buying me a coffee to keep the servers running!</p>
+                    <div class="qr-container">
+                        <img src="gcash.jpg" alt="GCash QR Code" onerror="this.src='https://via.placeholder.com/200x200?text=Upload+gcash.jpg'">
+                    </div>
+                    <p style="font-size: 13px; margin-top: 10px; font-weight: bold; color: var(--accent);">Scan via GCash</p>
+                </div>
+
+                <div id="tab-legal" class="tab-pane">
+                    <h3>Privacy & Terms</h3>
+                    <div style="height: 150px; overflow-y: auto; font-size: 12px; color: var(--text-dim); background: var(--input); padding: 15px; border-radius: 8px; text-align: left; margin-top: 15px;">
+                        <strong>1. Data Collection:</strong> We collect basic authentication data (Name, Email) strictly for login purposes via Google.<br><br>
+                        <strong>2. Data Storage:</strong> Chat history and generated images are securely stored in Firebase Firestore under your unique ID and are not shared.<br><br>
+                        <strong>3. Data Deletion:</strong> You may request full account deletion by contacting rodtroyg@gmail.com.<br><br>
+                        <strong>4. Usage:</strong> This is a personal portfolio project. Do not input highly sensitive personal data into the chat.
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -81,9 +106,7 @@
                     <span>Roty's AI</span>
                     <button class="mobile-close-btn" onclick="toggleSidebar()"><i class="fas fa-times"></i></button>
                 </div>
-                <button class="new-chat-btn" onclick="startNewChat()">
-                    <i class="fas fa-plus"></i> <span>New Chat</span>
-                </button>
+                <button class="new-chat-btn" onclick="startNewChat()"><i class="fas fa-plus"></i> <span>New Chat</span></button>
             </div>
 
             <div class="history-list-area">
@@ -93,11 +116,19 @@
                 </div>
                 <div id="history-list"></div>
                 <div id="guest-history-msg" style="display:none; font-size: 12px; color: var(--text-dim); text-align: center; padding: 20px;">
-                    History is disabled in Guest Mode. Sign in to save chats.
+                    History is disabled in Guest Mode.
                 </div>
             </div>
 
             <div class="sidebar-bottom">
+                <div class="action-item" onclick="toggleDevPortal()">
+                    <i class="fas fa-code-branch"></i>
+                    <span>Developer Hub</span>
+                </div>
+                <div class="action-item" onclick="toggleGallery()">
+                    <i class="fas fa-images"></i>
+                    <span>Image Gallery</span>
+                </div>
                 <div class="action-item" onclick="toggleTheme()">
                     <i class="fas fa-moon dark-only"></i>
                     <i class="fas fa-sun light-only"></i>
@@ -118,19 +149,28 @@
         <main class="main-workspace">
             <header class="top-nav">
                 <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-                <div class="engine-badge"><i class="fas fa-bolt"></i> Roty Neural Engine</div>
+                <div style="display: flex; gap: 10px; align-items: center; margin-left: auto;">
+                    <button class="action-icon-btn" onclick="exportChat()" title="Export Conversation"><i class="fas fa-download"></i></button>
+                    <div class="engine-badge"><i class="fas fa-bolt"></i> Roty Neural Engine</div>
+                </div>
             </header>
 
-            <div class="chat-viewport" id="chat-viewport">
-                </div>
+            <div class="chat-viewport" id="chat-viewport"></div>
 
             <footer class="input-area">
                 <div id="image-preview-container" class="img-preview-box" style="display: none;">
                     <img id="image-preview" src="">
                     <button onclick="clearImageUpload()"><i class="fas fa-times"></i></button>
                 </div>
+                
+                <div class="engine-toggle-container">
+                    <button id="mode-chat" class="mode-btn active"><i class="fas fa-comment-alt"></i> Chat Mode</button>
+                    <button id="mode-art" class="mode-btn"><i class="fas fa-paint-brush"></i> Art Mode</button>
+                </div>
+
                 <div class="input-wrapper">
                     <div class="input-row">
+                        <button id="mic-btn" class="input-icon" title="Voice Input"><i class="fas fa-microphone"></i></button>
                         <label for="img-upload" class="input-icon" title="Upload Image"><i class="fas fa-image"></i></label>
                         <input type="file" id="img-upload" hidden accept="image/*">
                         <textarea id="user-input" placeholder="Type a message or prompt..." rows="1"></textarea>
@@ -144,6 +184,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
