@@ -185,7 +185,7 @@ async function handleSend() {
     if (!text && !currentImageData) return;
     if (document.getElementById('welcome-hero')) document.getElementById('welcome-hero').remove();
 
-    // 1. THE FIX: Capture the image data safely BEFORE we clear the UI!
+    // 1. Capture the image data safely BEFORE we clear the UI
     const imageToSend = currentImageData;
 
     let userMessageHTML = text;
@@ -215,7 +215,6 @@ async function handleSend() {
 
     const aiId = appendMessage('ai', '<div class="typing-indicator"><span></span><span></span><span></span></div>');
     
-    // NEW MEMORY FIX: Gather all previous messages in this chat
     let chatSession = allChats.find(c => c.id === currentChatId);
     let chatHistory = [];
     if (chatSession && chatSession.msgs) {
@@ -232,8 +231,7 @@ async function handleSend() {
             body: JSON.stringify({ 
                 prompt: text,
                 history: chatHistory,
-                // 2. Send our safely captured image variable to the backend!
-                image: imageToSend 
+                image: imageToSend // Send the safely captured image
             })
         });
         const data = await res.json();
@@ -343,5 +341,46 @@ function renderGallery() { const grid = document.getElementById('gallery-grid');
 async function fetchChatsFromCloud() { if (isGuest || !currentUserUid) return; try { const snapshot = await db.collection('users').doc(currentUserUid).collection('chats').orderBy('updatedAt', 'desc').get(); allChats = []; snapshot.forEach(doc => { allChats.push(doc.data()); }); } catch (error) { console.error("Error loading chats from cloud:", error); } }
 function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobile-sidebar-overlay'); if (sidebar.classList.contains('mobile-open')) { sidebar.classList.remove('mobile-open'); overlay.style.opacity = '0'; setTimeout(() => overlay.style.display = 'none', 300); } else { sidebar.classList.add('mobile-open'); overlay.style.display = 'block'; setTimeout(() => overlay.style.opacity = '1', 10); } }
 function toggleTheme() { const html = document.documentElement; const theme = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; html.setAttribute('data-theme', theme); }
-document.getElementById('img-upload').addEventListener('change', function(e) { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = function(re) { currentImageData = re.target.result; document.getElementById('image-preview').src = currentImageData; document.getElementById('image-preview-container').style.display = 'flex'; }; reader.readAsDataURL(file); } });
-function clearImageUpload() { currentImageData = null; document.getElementById('img-upload').value = ""; document.getElementById('image-preview-container').style.display = 'none'; }
+
+// --- SMART IMAGE UPLOADER & COMPRESSOR ---
+document.getElementById('img-upload').addEventListener('change', function(e) { 
+    const file = e.target.files[0]; 
+    if (!file) return;
+
+    const reader = new FileReader(); 
+    reader.onload = function(event) { 
+        // Create a temporary invisible image
+        const img = new Image();
+        img.onload = function() {
+            // Create an invisible canvas to resize the photo
+            const canvas = document.createElement('canvas');
+            
+            // Shrink the image to a maximum of 800px wide (Perfect for AI Vision)
+            const MAX_WIDTH = 800;
+            let scaleSize = MAX_WIDTH / img.width;
+            if (scaleSize > 1) scaleSize = 1; // Don't upscale small images
+            
+            canvas.width = img.width * scaleSize;
+            canvas.height = img.height * scaleSize;
+            
+            // Draw the compressed image onto the canvas
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            // Convert back to Base64, but as a lightweight JPEG at 70% quality
+            currentImageData = canvas.toDataURL('image/jpeg', 0.7);
+            
+            // Show the preview in the UI
+            document.getElementById('image-preview').src = currentImageData; 
+            document.getElementById('image-preview-container').style.display = 'flex'; 
+        };
+        img.src = event.target.result;
+    }; 
+    reader.readAsDataURL(file); 
+});
+
+function clearImageUpload() { 
+    currentImageData = null; 
+    document.getElementById('img-upload').value = ""; 
+    document.getElementById('image-preview-container').style.display = 'none'; 
+}
