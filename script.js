@@ -185,13 +185,21 @@ async function handleSend() {
     if (!text && !currentImageData) return;
     if (document.getElementById('welcome-hero')) document.getElementById('welcome-hero').remove();
 
+    // 1. THE FIX: Capture the image data safely BEFORE we clear the UI!
+    const imageToSend = currentImageData;
+
     let userMessageHTML = text;
-    if (currentImageData) { userMessageHTML = `<img src="${currentImageData}" style="max-width: 200px; border-radius: 8px; margin-bottom: 10px; display: block;">` + text; }
+    if (imageToSend) { 
+        userMessageHTML = `<img src="${imageToSend}" style="max-width: 200px; border-radius: 8px; margin-bottom: 10px; display: block;">` + text; 
+    }
     
     appendMessage('user', userMessageHTML);
     saveChat(userMessageHTML, null); 
 
-    userInput.value = ''; userInput.style.height = 'auto'; clearImageUpload();
+    // Now it is safe to clear the UI input box
+    userInput.value = ''; 
+    userInput.style.height = 'auto'; 
+    clearImageUpload();
 
     if (isArtMode) {
         const id = appendMessage('ai', '<div class="typing-indicator"><span></span><span></span><span></span></div> Generating art...');
@@ -224,7 +232,8 @@ async function handleSend() {
             body: JSON.stringify({ 
                 prompt: text,
                 history: chatHistory,
-                image: currentImageData
+                // 2. Send our safely captured image variable to the backend!
+                image: imageToSend 
             })
         });
         const data = await res.json();
@@ -250,8 +259,6 @@ function appendMessage(role, content) {
     chatViewport.scrollTo({ top: chatViewport.scrollHeight, behavior: 'smooth' });
     return id;
 }
-
-// ... [The rest of the previous helper functions like addCopyButtons, saveChat, loadChat, exportChat remain exactly identical here] ...
 
 function addCopyButtons(container) {
     const preBlocks = container.querySelectorAll('pre');
