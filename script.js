@@ -221,10 +221,10 @@ async function handleSend() {
         const res = await fetch('/api/chat', {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            // Send the prompt AND the history array to the backend!
             body: JSON.stringify({ 
                 prompt: text,
-                history: chatHistory 
+                history: chatHistory,
+                image: currentImageData
             })
         });
         const data = await res.json();
