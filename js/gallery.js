@@ -105,7 +105,7 @@ function renderGallery() {
         div.title = img.prompt;
 
         div.innerHTML = `
-            <img src="${img.url}" alt="AI Generated Art" onclick="openImageLightbox(${index})">
+            <img src="${img.url}" alt="AI Generated Art" onclick="openImageLightbox(${index})" onerror="this.src='https://via.placeholder.com/600x400?text=Image+Unavailable'; this.onerror=null;">
 
             <a
                 href="${img.url}"

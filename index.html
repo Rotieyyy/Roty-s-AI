@@ -71,7 +71,7 @@
     <div id="image-lightbox-modal" class="auth-overlay hidden">
         <div class="lightbox-card">
             <button class="lightbox-close" onclick="closeImageLightbox()" title="Close"><i class="fas fa-times"></i></button>
-            <img id="lightbox-image" alt="Generated artwork preview">
+            <img id="lightbox-image" alt="Generated artwork preview" onerror="this.src='https://via.placeholder.com/600x400?text=Image+Unavailable'; this.onerror=null;">
             <p id="lightbox-prompt"></p>
             <div class="lightbox-actions">
                 <button id="lightbox-reuse" class="tool-btn"><i class="fas fa-redo"></i> Reuse Prompt</button>

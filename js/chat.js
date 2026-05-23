@@ -337,13 +337,10 @@ async function generateArtResponse(text, chat) {
         }
 
         const promptLabel = escapeHtml(data.revisedPrompt || text);
-        const aiText = `
-            <figure class="generated-art">
-                <img src="${data.url}" alt="${promptLabel}">
-                <figcaption>${promptLabel}</figcaption>
-            </figure>
-        `;
-
+        const aiText = `<figure class="generated-art">
+    <img src="${data.url}" alt="${promptLabel}">
+    <figcaption>${promptLabel}</figcaption>
+</figure>`;
 
         if (sendBtn) {
             sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
@@ -448,14 +445,18 @@ function renderAiMessage(div, content, messageIndex = null, options = {}) {
         ? getMessageText(content)
         : String(content ?? '');
 
+    // Strip leading whitespace so markdown parser doesn't treat HTML as code blocks
+    const cleanText = rawText.trim();
+
     div.innerHTML = '<div class="message-body"></div>';
 
     const body = div.querySelector('.message-body');
 
-    if (options.isHtml || rawText.trim().startsWith('<img')) {
-        body.innerHTML = rawText;
+    // Handle both new and existing HTML blocks cleanly
+    if (options.isHtml || cleanText.startsWith('<img') || cleanText.startsWith('<figure class="generated-art"')) {
+        body.innerHTML = cleanText;
     } else {
-        body.innerHTML = marked.parse(rawText || "Invalid response.");
+        body.innerHTML = marked.parse(cleanText || "Invalid response.");
     }
 
     addCopyButtons(body);
