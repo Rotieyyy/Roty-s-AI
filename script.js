@@ -947,17 +947,22 @@ function renderUserMessage(div, content, messageIndex) {
         parts.push(`<div>${escapeHtml(text).replace(/\n/g, '<br>')}</div>`);
     }
 
-    div.innerHTML = parts.join('') || '<div class="attachment-pill">Attachment uploaded</div>';
+    const contentHtml = parts.join('') || '<div class="attachment-pill">Attachment uploaded</div>';
+    div.innerHTML = `<div class="user-bubble">${contentHtml}</div>`;
 
     if (messageIndex !== null && !isSharedView) {
         const actions = document.createElement('div');
         actions.className = 'user-message-actions';
         actions.innerHTML = `
-            <button class="mini-action-btn" title="Edit and branch">
-                <i class="fas fa-code-branch"></i>
+            <button class="mini-action-btn" title="Copy message" data-action="copy">
+                <i class="far fa-copy"></i>
+            </button>
+            <button class="mini-action-btn" title="Edit message" data-action="edit">
+                <i class="fas fa-pen"></i>
             </button>
         `;
-        actions.querySelector('button').onclick = () => editAndBranchFrom(messageIndex);
+        actions.querySelector('[data-action="edit"]').onclick = () => editAndBranchFrom(messageIndex);
+        actions.querySelector('[data-action="copy"]').onclick = () => copyMessageText(text);
         div.appendChild(actions);
     }
 }

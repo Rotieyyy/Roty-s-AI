@@ -69,7 +69,8 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
 
 /* Messages */
 .message { margin-bottom: 32px; max-width: 100%; animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(15px); }
-.user-msg { background: var(--user-bubble); padding: 14px 20px; border-radius: 20px 20px 4px 20px; width: fit-content; max-width: 85%; margin-left: auto; font-size: 15px; line-height: 1.5; }
+.user-msg { display: flex; flex-direction: column; align-items: flex-end; width: 100%; font-size: 15px; line-height: 1.5; }
+.user-bubble { background: var(--user-bubble); padding: 14px 20px; border-radius: 20px 20px 4px 20px; width: fit-content; max-width: 85%; }
 .ai-msg { display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.6; }
 .ai-msg img { max-width: 100%; border-radius: 12px; border: 1px solid var(--border); margin-top: 12px; }
 .ai-msg pre { background: var(--input); border-radius: 12px; border: 1px solid var(--border); margin: 10px 0; overflow: hidden; }

@@ -21,7 +21,7 @@ export default async function handler(req, res) {
             });
         }
 
-        const allowedModels = new Set(['flux', 'turbo', 'kontext']);
+        const allowedModels = new Set(['flux', 'turbo', 'flux-realism']);
         const safeModel = allowedModels.has(model) ? model : 'flux';
         const safeSize = /^\d{3,4}x\d{3,4}$/.test(size) ? size : '1024x1024';
         const [width, height] = safeSize.split('x').map(Number);
