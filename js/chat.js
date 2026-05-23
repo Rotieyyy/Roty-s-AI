@@ -299,6 +299,7 @@ async function generateArtResponse(text, chat) {
     }
 
     const aiId = appendMessage('ai', "Generating art...", null, { skipTools: true });
+    const aiDiv = document.getElementById(aiId);
 
     try {
         currentAbortController = new AbortController();
@@ -723,7 +724,8 @@ async function regenerateResponse(messageIndex) {
     }
 
     const aiMessage = chat.msgs[messageIndex];
-    const isImageResponse = aiMessage && typeof aiMessage.content === 'string' && aiMessage.content.includes('<figure class="generated-art">');
+    const msgText = getMessageText(aiMessage);
+    const isImageResponse = msgText && msgText.includes('<figure class="generated-art">');
 
     if (isImageResponse && !isArtMode) {
         setMode('art');
