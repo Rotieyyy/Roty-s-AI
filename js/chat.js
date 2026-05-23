@@ -722,6 +722,17 @@ async function regenerateResponse(messageIndex) {
         return;
     }
 
+    const aiMessage = chat.msgs[messageIndex];
+    const isImageResponse = aiMessage && typeof aiMessage.content === 'string' && aiMessage.content.includes('<figure class="generated-art">');
+
+    if (isImageResponse && !isArtMode) {
+        setMode('art');
+        showToast("Switched to Art Mode to regenerate your image.");
+    } else if (!isImageResponse && isArtMode) {
+        setMode('chat');
+        showToast("Switched to Chat Mode to regenerate your text.");
+    }
+
     const userMessage = chat.msgs[userIndex];
     chat.msgs = chat.msgs.slice(0, userIndex + 1);
     await persistChat(chat);
@@ -732,7 +743,7 @@ async function regenerateResponse(messageIndex) {
     await sendMessage(getMessageText(userMessage), {
         skipUserAppend: true,
         documentAttachment: userMessage.document || null,
-        mode: userMessage.mode || 'chat',
+        mode: isImageResponse ? 'art' : (userMessage.mode || 'chat'),
         engine: userMessage.engine || currentEngine,
         persona: userMessage.persona || currentPersona
     });

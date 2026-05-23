@@ -76,6 +76,11 @@ async function saveImageToGallery(imageUrl, promptText) {
     }
 }
 
+function handleImageError(img) {
+    img.onerror = null;
+    img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="100%" height="100%" fill="%232a2a40"/><text x="50%" y="50%" font-family="sans-serif" font-size="20" fill="%23888" text-anchor="middle" dominant-baseline="middle">Image Unavailable</text></svg>';
+}
+
 function renderGallery() {
     const grid = document.getElementById('gallery-grid');
 
@@ -105,7 +110,7 @@ function renderGallery() {
         div.title = img.prompt;
 
         div.innerHTML = `
-            <img src="${img.url}" alt="AI Generated Art" onclick="openImageLightbox(${index})" onerror="this.src='https://via.placeholder.com/600x400?text=Image+Unavailable'; this.onerror=null;">
+            <img src="${img.url}" alt="AI Generated Art" onclick="openImageLightbox(${index})" onerror="handleImageError(this)">
 
             <a
                 href="${img.url}"
