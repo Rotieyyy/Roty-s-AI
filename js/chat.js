@@ -138,7 +138,7 @@ async function sendMessage(text, options = {}) {
 
         try {
             currentAbortController = new AbortController();
-            const sendBtn = document.getElementById('send-btn');
+
             if (sendBtn) {
                 sendBtn.innerHTML = '<i class="fas fa-stop-circle"></i>';
                 sendBtn.style.background = 'var(--red)';
@@ -171,7 +171,7 @@ async function sendMessage(text, options = {}) {
             const data = await res.json();
             const aiText = data.text;
         
-            const sendBtn = document.getElementById('send-btn');
+
             if (sendBtn) {
                 sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
                 sendBtn.style.background = '';
@@ -182,7 +182,7 @@ async function sendMessage(text, options = {}) {
             renderAiMessage(aiNode, aiText, newIndex);
 
         } catch (e) {
-            const sendBtn = document.getElementById('send-btn');
+
             if (sendBtn) {
                 sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
                 sendBtn.style.background = '';
@@ -302,7 +302,7 @@ async function generateArtResponse(text, chat) {
 
     try {
         currentAbortController = new AbortController();
-        const sendBtn = document.getElementById('send-btn');
+
         if (sendBtn) {
             sendBtn.innerHTML = '<i class="fas fa-stop-circle"></i>';
             sendBtn.style.background = 'var(--red)';
@@ -344,7 +344,7 @@ async function generateArtResponse(text, chat) {
             </figure>
         `;
 
-        const sendBtn = document.getElementById('send-btn');
+
         if (sendBtn) {
             sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
             sendBtn.style.background = '';
@@ -361,7 +361,7 @@ async function generateArtResponse(text, chat) {
         saveImageToGallery(data.url, data.revisedPrompt || text);
 
     } catch (e) {
-        const sendBtn = document.getElementById('send-btn');
+
         if (sendBtn) {
             sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
             sendBtn.style.background = '';
