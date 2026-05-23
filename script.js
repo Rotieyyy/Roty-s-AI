@@ -24,6 +24,7 @@ let currentUserUid = null;
 let userGallery = [];
 let isArtMode = false;
 let isInitializing = false;
+let currentEngine = 'roty-1'; // NEW: Model Selection State
 
 // --- TOAST NOTIFICATIONS ---
 function showToast(message, type = 'info') {
@@ -67,6 +68,32 @@ const userInput = document.getElementById('user-input');
 const chatViewport = document.getElementById('chat-viewport');
 const sendBtn = document.getElementById('send-btn');
 const historyList = document.getElementById('history-list');
+
+// --- MODEL SELECTION LOGIC ---
+function toggleModelDropdown() {
+    document.getElementById('model-dropdown').classList.toggle('hidden');
+}
+
+function selectModel(engineId, engineName) {
+    currentEngine = engineId;
+    document.getElementById('current-model-name').innerText = engineName;
+    
+    // Highlight the active option in the menu
+    document.querySelectorAll('.model-option').forEach(el => el.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    
+    toggleModelDropdown();
+    showToast(`Switched to ${engineName}`);
+}
+
+// Close dropdown if user clicks outside of it
+document.addEventListener('click', (e) => {
+    const btn = document.getElementById('model-selector-btn');
+    const dropdown = document.getElementById('model-dropdown');
+    if (btn && dropdown && !btn.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add('hidden');
+    }
+});
 
 // --- ENGINE MODE TOGGLE ---
 function setMode(mode) {
@@ -451,9 +478,10 @@ async function handleSend() {
             },
             body: JSON.stringify({
                 prompt: text,
-                history: chatHistory, // FIXED: Now passing actual memory instead of []
+                history: chatHistory, 
                 image: imageToSend,
-                mode: isArtMode ? 'art' : 'chat'
+                mode: isArtMode ? 'art' : 'chat',
+                engine: currentEngine // NEW: Passes the selected model
             })
         });
 
@@ -559,10 +587,8 @@ function addCopyButtons(container) {
     });
 }
 
-// --- SAVE CHAT ---
+// --- SAVE CHAT (UPDATED FOR GUEST MEMORY) ---
 async function saveChat(userText, aiText) {
-    if (isGuest) return;
-
     let chat = allChats.find(c => c.id === currentChatId);
 
     if (!chat) {
@@ -591,9 +617,12 @@ async function saveChat(userText, aiText) {
     }
 
     chat.updatedAt = Date.now();
-    renderHistory();
+    
+    if (!isGuest) {
+        renderHistory();
+    }
 
-    if (currentUserUid) {
+    if (!isGuest && currentUserUid) {
         try {
             await db
                 .collection('users')
@@ -607,10 +636,8 @@ async function saveChat(userText, aiText) {
     }
 }
 
-// --- UPDATE AI RESPONSE ---
+// --- UPDATE AI RESPONSE (UPDATED FOR GUEST MEMORY) ---
 async function updateLastAiResponse(aiText) {
-    if (isGuest || !currentUserUid) return;
-
     let chat = allChats.find(c => c.id === currentChatId);
 
     if (chat) {
@@ -621,15 +648,17 @@ async function updateLastAiResponse(aiText) {
 
         chat.updatedAt = Date.now();
 
-        try {
-            await db
-                .collection('users')
-                .doc(currentUserUid)
-                .collection('chats')
-                .doc(currentChatId.toString())
-                .set(chat);
-        } catch (e) {
-            console.error("Cloud Update Error:", e);
+        if (!isGuest && currentUserUid) {
+            try {
+                await db
+                    .collection('users')
+                    .doc(currentUserUid)
+                    .collection('chats')
+                    .doc(currentChatId.toString())
+                    .set(chat);
+            } catch (e) {
+                console.error("Cloud Update Error:", e);
+            }
         }
     }
 }

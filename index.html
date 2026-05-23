@@ -160,10 +160,28 @@
         <main class="main-workspace">
             <header class="top-nav">
                 <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-                <div style="display: flex; gap: 10px; align-items: center; margin-left: auto;">
-                    <button class="action-icon-btn" onclick="exportChat()" title="Export Conversation"><i class="fas fa-download"></i></button>
-                    <div class="engine-badge"><i class="fas fa-bolt"></i> Roty Neural Engine</div>
-                </div>
+                <div style="display: flex; gap: 10px; align-items: center; margin-left: auto; position: relative;">
+    <button class="action-icon-btn" onclick="exportChat()" title="Export Conversation"><i class="fas fa-download"></i></button>
+    
+    <button class="engine-badge" id="model-selector-btn" onclick="toggleModelDropdown()" style="cursor: pointer;">
+        <i class="fas fa-bolt"></i> <span id="current-model-name">Roty 1.0</span> <i class="fas fa-chevron-down" style="font-size: 10px; margin-left: 4px;"></i>
+    </button>
+    
+    <div id="model-dropdown" class="model-dropdown hidden">
+        <div class="model-option active" onclick="selectModel('roty-1', 'Roty 1.0')">
+            <div class="model-title">Roty 1.0 <span class="model-tag">Fast</span></div>
+            <div class="model-desc">8B Engine. Lightning-fast responses for everyday chat.</div>
+        </div>
+        <div class="model-option" onclick="selectModel('roty-2', 'Roty 2.0')">
+            <div class="model-title">Roty 2.0 <span class="model-tag">Vision</span></div>
+            <div class="model-desc">11B Engine. Perfectly balanced, with image understanding.</div>
+        </div>
+        <div class="model-option" onclick="selectModel('roty-pro', 'Roty Pro')">
+            <div class="model-title">Roty Pro <span class="model-tag pro">70B</span></div>
+            <div class="model-desc">70B Engine. Maximum reasoning for coding and complex logic.</div>
+        </div>
+    </div>
+</div>
             </header>
 
             <div class="chat-viewport" id="chat-viewport"></div>

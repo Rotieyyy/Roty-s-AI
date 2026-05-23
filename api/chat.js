@@ -13,7 +13,8 @@ export default async function handler(req, res) {
             prompt,
             history = [],
             image,
-            mode = 'chat'
+            mode = 'chat',
+            engine = 'roty-1' // NEW: Gets the selected model from frontend
         } = req.body || {};
 
         const key = process.env.GROQ_API_KEY;
@@ -82,6 +83,21 @@ To generate images, please switch to **Art Mode** above and try again.`
             : false;
 
         const useVision = !!image || historyHasImage;
+
+        // --- MAP ROTY ENGINES TO GROQ MODELS ---
+        let selectedGroqModel = "llama-3.1-8b-instant"; // Default Roty 1.0
+
+        if (engine === 'roty-2') {
+            selectedGroqModel = "llama-3.2-11b-vision-preview";
+        } else if (engine === 'roty-pro') {
+            selectedGroqModel = "llama-3.3-70b-versatile"; // Roty Pro 70B
+        }
+
+        // OVERRIDE: Groq's 8B and 70B models don't support vision natively.
+        // If the user uploads an image, we quietly force it to the 11B vision model so it doesn't crash.
+        if (useVision) {
+            selectedGroqModel = "llama-3.2-11b-vision-preview";
+        }
 
         // --- SAFE HISTORY FORMATTER ---
         const formattedHistory = Array.isArray(history)
@@ -198,9 +214,7 @@ Rules:
 
                 body: JSON.stringify({
 
-                    model: useVision
-                        ? "llama-3.2-11b-vision-preview"
-                        : "llama-3.1-8b-instant",
+                    model: selectedGroqModel, // UPDATED: Uses dynamic engine map
 
                     temperature: 0.7,
 
