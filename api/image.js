@@ -82,7 +82,7 @@ export default async function handler(req, res) {
         }
 
         return res.status(200).json({
-            url: `https://gen.pollinations.ai/image/${encodeURIComponent(imagePrompt)}?${params.toString()}`,
+            url: `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?${params.toString()}`,
             model: safeModel,
             revisedPrompt: imagePrompt
         });
