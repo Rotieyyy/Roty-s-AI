@@ -60,10 +60,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
 /* Main Workspace */
 .main-workspace { flex: 1; display: flex; flex-direction: column; position: relative; max-width: 1000px; margin: 0 auto; width: 100%; z-index: 1; }
 .top-nav { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+.top-nav > div:last-child { flex-wrap: wrap; justify-content: flex-end; }
 .mobile-toggle { background: none; border: none; color: var(--text); font-size: 20px; cursor: pointer; display: none; }
 .engine-badge { font-size: 12px; font-weight: 600; color: var(--accent); background: rgba(99, 102, 241, 0.1); padding: 6px 12px; border-radius: 20px; display: flex; align-items: center; gap: 6px; }
 .action-icon-btn { background: var(--input); border: 1px solid transparent; color: var(--text-dim); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;}
-.action-icon-btn:hover { background: var(--bg); border-color: var(--border); color: var(--text); }
+.action-icon-btn:hover, .action-icon-btn.active { background: var(--bg); border-color: var(--border); color: var(--accent); }
 .chat-viewport { flex: 1; overflow-y: auto; padding: 24px 40px; scroll-behavior: smooth; }
 
 /* Messages */
@@ -76,12 +77,37 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
 .copy-btn { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 6px; font-family: inherit; transition: color 0.2s; }
 .copy-btn:hover { color: var(--text); }
 .ai-msg pre code { display: block; padding: 16px; overflow-x: auto; font-family: monospace; font-size: 14px; }
+.message-body { max-width: 100%; }
+.message-body p { margin: 0 0 10px; }
+.message-body p:last-child { margin-bottom: 0; }
+.message-body ul, .message-body ol { margin: 8px 0 12px 24px; }
+.message-body li { margin: 4px 0; }
+.message-body table { width: 100%; border-collapse: collapse; margin: 12px 0; border-radius: 8px; overflow: hidden; }
+.message-body th, .message-body td { border: 1px solid var(--border); padding: 9px 10px; text-align: left; vertical-align: top; }
+.message-body th { background: var(--input); font-weight: 700; }
+.message-body blockquote { border-left: 3px solid var(--accent); padding-left: 12px; color: var(--text-dim); margin: 10px 0; }
+.message-actions, .user-message-actions { display: flex; align-items: center; gap: 6px; margin-top: 6px; color: var(--text-dim); }
+.user-message-actions { justify-content: flex-end; }
+.mini-action-btn { width: 30px; height: 30px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--text-dim); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.mini-action-btn:hover, .mini-action-btn.active { background: var(--input); color: var(--text); border-color: var(--border); }
+.mini-action-btn.danger, .mini-action-btn.active.danger { color: #ef4444; }
+.message-download { position: relative; }
+.download-menu { position: absolute; top: 36px; left: 0; width: 120px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 12px 24px rgba(0,0,0,0.35); padding: 6px; z-index: 20; }
+.download-menu.hidden { display: none; }
+.download-menu button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text); padding: 8px 10px; border-radius: 7px; cursor: pointer; font-size: 13px; }
+.download-menu button:hover { background: var(--input); }
+.attachment-pill { display: inline-flex; align-items: center; gap: 8px; background: rgba(99, 102, 241, 0.14); color: var(--text); border: 1px solid var(--border); border-radius: 999px; padding: 6px 10px; font-size: 12px; margin: 2px 0 6px; }
 
 /* Input Hub */
 .input-area { padding: 0 40px 30px; }
 .img-preview-box { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--input); border-radius: 16px 16px 0 0; border: 1px solid var(--border); border-bottom: none; width: fit-content; animation: fadeIn 0.3s ease; }
 .img-preview-box img { max-height: 50px; border-radius: 6px; }
 .img-preview-box button { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; margin-left: 15px;}
+.attachment-preview-box { align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: var(--input); border-radius: 14px 14px 0 0; border: 1px solid var(--border); border-bottom: none; width: fit-content; max-width: 100%; color: var(--text); font-size: 13px; animation: fadeIn 0.3s ease; }
+.attachment-preview-box span { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.attachment-preview-box strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+.attachment-preview-box button { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; }
+.input-area.read-only .engine-toggle-container, .input-area.read-only .input-wrapper, .input-area.read-only .img-preview-box, .input-area.read-only .attachment-preview-box { display: none !important; }
 .engine-toggle-container { display: flex; gap: 10px; margin-bottom: 12px; justify-content: center; }
 .mode-btn { background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--text-dim); padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; }
 .mode-btn:hover { background: var(--input); color: var(--text); }
@@ -99,7 +125,7 @@ textarea { flex: 1; background: transparent; border: none; color: var(--text); p
 /* Hero Section & Typing */
 .welcome-hero { text-align: center; margin-top: 15vh; animation: fadeIn 0.8s ease; }
 .hero-logo { font-size: 48px; color: var(--accent); margin-bottom: 24px; animation: floatLogo 4s ease-in-out infinite; }
-.shimmer-text { font-size: 48px; font-weight: 700; letter-spacing: -1px; margin-bottom: 12px; background: linear-gradient(135deg, #fff, #a1a1aa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.shimmer-text { font-size: 48px; font-weight: 700; letter-spacing: 0; margin-bottom: 12px; background: linear-gradient(135deg, #fff, #a1a1aa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .welcome-hero p { color: var(--text-dim); font-size: 16px; }
 .legal-text { font-size: 12px; color: var(--text-dim); text-align: center; margin-top: 16px; font-weight: 500; }
 .typing-indicator { display: inline-flex; align-items: center; gap: 5px; padding: 8px 4px; }
@@ -113,7 +139,15 @@ textarea { flex: 1; background: transparent; border: none; color: var(--text); p
 .gallery-item:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
 .gallery-item:hover img { transform: scale(1.05); }
 .gallery-download-btn { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s ease; }
-.gallery-item:hover .gallery-download-btn { opacity: 1; }
+.gallery-delete-btn { position: absolute; bottom: 10px; right: 48px; background: rgba(239,68,68,0.85); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; cursor: pointer; transition: opacity 0.2s ease; }
+.gallery-item:hover .gallery-download-btn, .gallery-item:hover .gallery-delete-btn { opacity: 1; }
+.lightbox-card { width: min(92vw, 900px); max-height: 90vh; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; position: relative; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+.lightbox-card img { max-width: 100%; max-height: 62vh; object-fit: contain; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); }
+.lightbox-card p { color: var(--text-dim); font-size: 14px; line-height: 1.5; }
+.lightbox-close { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border: none; border-radius: 50%; background: rgba(0,0,0,0.55); color: #fff; cursor: pointer; }
+.lightbox-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.tool-btn { border: 1px solid var(--border); background: var(--input); color: var(--text); border-radius: 10px; padding: 9px 12px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+.tool-btn.danger { color: #ef4444; }
 
 /* Toast Notifications */
 .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
@@ -150,12 +184,17 @@ textarea { flex: 1; background: transparent; border: none; color: var(--text); p
     .mobile-close-btn { display: block; }
     .chat-viewport, .input-area { padding-left: 20px; padding-right: 20px; }
     .shimmer-text { font-size: 32px; }
+    .top-nav { padding: 0 14px; }
+    .engine-badge { max-width: 126px; overflow: hidden; white-space: nowrap; }
+    .model-dropdown, .persona-dropdown { right: 0; width: min(280px, calc(100vw - 28px)); }
+    .message-body table { display: block; overflow-x: auto; }
 }
 
 /* Model Dropdown Styles */
 #model-selector-btn { border: 1px solid transparent; transition: all 0.2s; }
 #model-selector-btn:hover { background: rgba(99, 102, 241, 0.2); border-color: rgba(99, 102, 241, 0.3); }
 .model-dropdown { position: absolute; top: 45px; right: 0; background: var(--card); border: 1px solid var(--border); border-radius: 16px; width: 280px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 1000; overflow: hidden; animation: slideDownFade 0.2s ease; }
+.persona-dropdown { right: 165px; }
 .model-dropdown.hidden { display: none; }
 .model-option { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.2s; }
 .model-option:last-child { border-bottom: none; }
@@ -165,3 +204,7 @@ textarea { flex: 1; background: transparent; border: none; color: var(--text); p
 .model-tag { font-size: 10px; background: var(--input); padding: 2px 6px; border-radius: 4px; color: var(--text-dim); }
 .model-tag.pro { background: var(--accent); color: white; }
 .model-desc { font-size: 12px; color: var(--text-dim); margin-top: 4px; line-height: 1.4; }
+
+@media (max-width: 768px) {
+    .persona-dropdown { right: 0; }
+}

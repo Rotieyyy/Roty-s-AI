@@ -19,10 +19,13 @@
     <!-- FAVICON FIX -->
 	<link rel="icon" href="/favicon.ico" type="image/x-icon">
 	<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-	<link rel="apple-touch-icon" href="/rotyai.jpg">
+    <link rel="apple-touch-icon" href="/rotyai.jpg">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
     <div id="toast-container" class="toast-container"></div>
@@ -64,6 +67,18 @@
         </div>
     </div>
 
+    <div id="image-lightbox-modal" class="auth-overlay hidden">
+        <div class="lightbox-card">
+            <button class="lightbox-close" onclick="closeImageLightbox()" title="Close"><i class="fas fa-times"></i></button>
+            <img id="lightbox-image" alt="Generated artwork preview">
+            <p id="lightbox-prompt"></p>
+            <div class="lightbox-actions">
+                <a id="lightbox-download" href="#" target="_blank" download="Rotys_Art.jpg" class="tool-btn"><i class="fas fa-download"></i> Download</a>
+                <button id="lightbox-delete" class="tool-btn danger"><i class="fas fa-trash-alt"></i> Delete</button>
+            </div>
+        </div>
+    </div>
+
     <div id="dev-portal-modal" class="auth-overlay hidden">
         <div class="auth-glass-card portal-card">
             <div class="auth-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -72,9 +87,9 @@
             </div>
             
             <div class="portal-tabs">
-                <button class="tab-btn active" onclick="switchTab('tab-about')">About</button>
-                <button class="tab-btn" onclick="switchTab('tab-donate')">Support</button>
-                <button class="tab-btn" onclick="switchTab('tab-legal')">Legal</button>
+                <button class="tab-btn active" onclick="switchTab('tab-about', this)">About</button>
+                <button class="tab-btn" onclick="switchTab('tab-donate', this)">Support</button>
+                <button class="tab-btn" onclick="switchTab('tab-legal', this)">Legal</button>
             </div>
 
             <div class="portal-content">
@@ -161,22 +176,51 @@
             <header class="top-nav">
                 <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                 <div style="display: flex; gap: 10px; align-items: center; margin-left: auto; position: relative;">
+    <button class="action-icon-btn" id="web-search-toggle" onclick="toggleWebSearch()" title="Web Search Off"><i class="fas fa-globe"></i></button>
+    <button class="action-icon-btn" onclick="shareCurrentChat()" title="Share Conversation"><i class="fas fa-share-nodes"></i></button>
     <button class="action-icon-btn" onclick="exportChat()" title="Export Conversation"><i class="fas fa-download"></i></button>
+
+    <button class="engine-badge" id="persona-selector-btn" onclick="togglePersonaDropdown()" style="cursor: pointer;">
+        <i class="fas fa-user-gear"></i> <span id="current-persona-name">General</span> <i class="fas fa-chevron-down" style="font-size: 10px; margin-left: 4px;"></i>
+    </button>
+
+    <div id="persona-dropdown" class="model-dropdown hidden persona-dropdown">
+        <div class="model-option active" onclick="selectPersona('general', 'General', this)">
+            <div class="model-title">General <span class="model-tag">Default</span></div>
+            <div class="model-desc">Balanced help for everyday chat, coding, and planning.</div>
+        </div>
+        <div class="model-option" onclick="selectPersona('code-reviewer', 'Code Reviewer', this)">
+            <div class="model-title">Code Reviewer <span class="model-tag">Debug</span></div>
+            <div class="model-desc">Find bugs, risks, edge cases, and missing tests.</div>
+        </div>
+        <div class="model-option" onclick="selectPersona('creative-writer', 'Creative Writer', this)">
+            <div class="model-title">Creative Writer <span class="model-tag">Story</span></div>
+            <div class="model-desc">Sharper prose, ideas, scripts, and narrative polish.</div>
+        </div>
+        <div class="model-option" onclick="selectPersona('video-script', 'Video Script', this)">
+            <div class="model-title">Video Script <span class="model-tag">Media</span></div>
+            <div class="model-desc">Hooks, structure, voiceover, and shot-friendly scripts.</div>
+        </div>
+        <div class="model-option" onclick="selectPersona('photo-prompt', 'Photo Prompt', this)">
+            <div class="model-title">Photo Prompt <span class="model-tag">Visual</span></div>
+            <div class="model-desc">Photography, lighting, style, and image prompt ideas.</div>
+        </div>
+    </div>
     
     <button class="engine-badge" id="model-selector-btn" onclick="toggleModelDropdown()" style="cursor: pointer;">
         <i class="fas fa-bolt"></i> <span id="current-model-name">Roty 1.0</span> <i class="fas fa-chevron-down" style="font-size: 10px; margin-left: 4px;"></i>
     </button>
     
     <div id="model-dropdown" class="model-dropdown hidden">
-        <div class="model-option active" onclick="selectModel('roty-1', 'Roty 1.0')">
+        <div class="model-option active" onclick="selectModel('roty-1', 'Roty 1.0', this)">
             <div class="model-title">Roty 1.0 <span class="model-tag">Fast</span></div>
             <div class="model-desc">8B Engine. Lightning-fast responses for everyday chat.</div>
         </div>
-        <div class="model-option" onclick="selectModel('roty-2', 'Roty 2.0')">
-            <div class="model-title">Roty 2.0 <span class="model-tag">Vision</span></div>
-            <div class="model-desc">11B Engine. Perfectly balanced, with image understanding.</div>
+        <div class="model-option" onclick="selectModel('roty-2', 'Roty 2.0', this)">
+            <div class="model-title">Roty 2.0 <span class="model-tag">Balanced</span></div>
+            <div class="model-desc">11B Engine. A stronger everyday chat mode for richer answers.</div>
         </div>
-        <div class="model-option" onclick="selectModel('roty-pro', 'Roty Pro')">
+        <div class="model-option" onclick="selectModel('roty-pro', 'Roty Pro', this)">
             <div class="model-title">Roty Pro <span class="model-tag pro">70B</span></div>
             <div class="model-desc">70B Engine. Maximum reasoning for coding and complex logic.</div>
         </div>
@@ -191,6 +235,10 @@
                     <img id="image-preview">
                     <button onclick="clearImageUpload()"><i class="fas fa-times"></i></button>
                 </div>
+                <div id="document-preview-container" class="attachment-preview-box" style="display: none;">
+                    <span><i class="fas fa-file-lines"></i> <strong id="document-name"></strong></span>
+                    <button onclick="clearDocumentUpload()" title="Remove document"><i class="fas fa-times"></i></button>
+                </div>
                 
                 <div class="engine-toggle-container">
                     <button id="mode-chat" class="mode-btn active"><i class="fas fa-comment-alt"></i> Chat Mode</button>
@@ -202,6 +250,8 @@
                         <button id="mic-btn" class="input-icon" title="Voice Input"><i class="fas fa-microphone"></i></button>
                         <label for="img-upload" class="input-icon" title="Upload Image"><i class="fas fa-image"></i></label>
                         <input type="file" id="img-upload" hidden accept="image/*">
+                        <label for="doc-upload" class="input-icon" title="Upload Document"><i class="fas fa-file-lines"></i></label>
+                        <input type="file" id="doc-upload" hidden accept=".txt,.md,.csv,text/plain,text/markdown,text/csv">
                         <textarea id="user-input" placeholder="Type a message or prompt..." rows="1"></textarea>
                         <button id="send-btn" class="send-button"><i class="fas fa-paper-plane"></i></button>
                     </div>

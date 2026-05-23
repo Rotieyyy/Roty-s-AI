@@ -13,8 +13,11 @@ export default async function handler(req, res) {
             prompt,
             history = [],
             image,
+            documentContext,
             mode = 'chat',
-            engine = 'roty-1' // NEW: Gets the selected model from frontend
+            engine = 'roty-1',
+            persona = 'general',
+            webSearch = false
         } = req.body || {};
 
         const key = process.env.GROQ_API_KEY;
@@ -36,6 +39,13 @@ export default async function handler(req, res) {
         if (image && image.length > 4_000_000) {
             return res.status(413).json({
                 error: "Image payload too large."
+            });
+        }
+
+        if (image) {
+            return res.status(200).json({
+                text:
+                    "You just uploaded a photo. Sorry, I can't describe photos in this version yet. You can still type what you want help with, or switch to Art Mode to generate new images."
             });
         }
 
@@ -74,29 +84,13 @@ To generate images, please switch to **Art Mode** above and try again.`
             });
         }
 
-        // --- DETECT IMAGE HISTORY ---
-        const historyHasImage = Array.isArray(history)
-            ? history.some(msg =>
-                typeof msg?.content === 'string' &&
-                msg.content.includes('<img ')
-            )
-            : false;
-
-        const useVision = !!image || historyHasImage;
-
         // --- MAP ROTY ENGINES TO GROQ MODELS ---
         let selectedGroqModel = "llama-3.1-8b-instant"; // Default Roty 1.0
 
         if (engine === 'roty-2') {
-            selectedGroqModel = "llama-3.2-11b-vision-preview";
+            selectedGroqModel = "llama-3.3-70b-versatile";
         } else if (engine === 'roty-pro') {
             selectedGroqModel = "llama-3.3-70b-versatile"; // Roty Pro 70B
-        }
-
-        // OVERRIDE: Groq's 8B and 70B models don't support vision natively.
-        // If the user uploads an image, we quietly force it to the 11B vision model so it doesn't crash.
-        if (useVision) {
-            selectedGroqModel = "llama-3.2-11b-vision-preview";
         }
 
         // --- SAFE HISTORY FORMATTER ---
@@ -113,45 +107,64 @@ To generate images, please switch to **Art Mode** above and try again.`
                         ? msg.content
                         : '';
 
-                const imgMatch =
-                    safeContent.match(
-                        /<img[^>]*src="([^"]+)"/
-                    );
-
-                // IMAGE MESSAGE
-                if (imgMatch) {
-
-                    return {
-                        role: safeRole,
-                        content: [
-                            {
-                                type: "text",
-                                text:
-                                    safeContent
-                                        .replace(/<img[^>]*>/g, '')
-                                        .trim() ||
-                                    "User shared an image."
-                            },
-                            {
-                                type: "image_url",
-                                image_url: {
-                                    url: imgMatch[1]
-                                }
-                            }
-                        ]
-                    };
-                }
-
                 // TEXT MESSAGE
                 return {
                     role: safeRole,
-                    content: safeContent
+                    content:
+                        safeContent
+                            .replace(/<img[^>]*>/g, '[Image]')
+                            .trim()
                 };
 
             }).slice(-10) // MEMORY LIMIT
             : [];
 
         // --- SYSTEM PROMPT ---
+        const personaPrompts = {
+            general: "Be balanced, practical, and clear.",
+            "code-reviewer": "Act as a careful code reviewer. Prioritize bugs, regressions, edge cases, security, and missing tests.",
+            "creative-writer": "Act as a creative writing partner. Improve voice, imagery, structure, rhythm, and originality.",
+            "video-script": "Act as a video script assistant. Help with hooks, pacing, structure, narration, scenes, and calls to action.",
+            "photo-prompt": "Act as a photography prompt expert. Focus on subject, camera, lens, lighting, composition, mood, and style."
+        };
+
+        const personaInstruction =
+            personaPrompts[persona] || personaPrompts.general;
+
+        const safeDocument =
+            documentContext &&
+            typeof documentContext.name === 'string' &&
+            typeof documentContext.content === 'string'
+                ? {
+                    name: documentContext.name.substring(0, 120),
+                    content: documentContext.content.substring(0, 18000)
+                }
+                : null;
+
+        const webContext = webSearch && mode === 'chat'
+            ? await fetchSearchContext(prompt)
+            : '';
+
+        const contextParts = [];
+
+        if (safeDocument) {
+            contextParts.push(
+`Attached document: ${safeDocument.name}
+${safeDocument.content}`
+            );
+        }
+
+        if (webContext) {
+            contextParts.push(
+`Web search context:
+${webContext}`
+            );
+        }
+
+        const promptWithContext = contextParts.length
+            ? `${contextParts.join('\n\n')}\n\nUser request:\n${prompt}`
+            : prompt;
+
         const systemPrompt = mode === 'art'
             ? `
 You are Roty's AI in Art Mode.
@@ -164,7 +177,9 @@ Keep responses short and visual-focused.
 You are Roty's AI in Chat Mode.
 
 Rules:
-- Respond in Markdown.
+- ${personaInstruction}
+- Use clear formatting only when it helps: short paragraphs, bullets, numbered steps, tables, and code blocks are all supported.
+- For code, include fenced code blocks with the language name when possible.
 - Help with coding, questions, conversation, and analysis.
 - NEVER claim you can generate images in Chat Mode.
 - If user asks for images, tell them to switch to Art Mode.
@@ -177,7 +192,7 @@ Rules:
                 content: [
                     {
                         type: "text",
-                        text: prompt
+                        text: promptWithContext
                     },
                     {
                         type: "image_url",
@@ -189,7 +204,7 @@ Rules:
             }
             : {
                 role: "user",
-                content: prompt
+                content: promptWithContext
             };
 
         // --- TIMEOUT CONTROLLER ---
@@ -288,5 +303,43 @@ Rules:
                 e?.message ||
                 "Unknown server error."
         });
+    }
+}
+
+async function fetchSearchContext(query) {
+    try {
+        const url =
+            `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`;
+
+        const response = await fetch(url, {
+            headers: {
+                "Accept": "application/json"
+            }
+        });
+
+        if (!response.ok) return '';
+
+        const data = await response.json();
+        const parts = [];
+
+        if (data.AbstractText) {
+            parts.push(data.AbstractText);
+        }
+
+        if (Array.isArray(data.RelatedTopics)) {
+            data.RelatedTopics
+                .flatMap(item => item.Topics || [item])
+                .filter(item => item.Text)
+                .slice(0, 5)
+                .forEach(item => {
+                    parts.push(`${item.Text}${item.FirstURL ? ` (${item.FirstURL})` : ''}`);
+                });
+        }
+
+        return parts.join('\n').substring(0, 4000);
+
+    } catch (e) {
+        console.error("Search Context Error:", e);
+        return '';
     }
 }
