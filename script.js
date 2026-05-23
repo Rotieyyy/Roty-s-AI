@@ -29,6 +29,9 @@ let currentPersona = 'general';
 let currentPersonaName = 'General';
 let webSearchEnabled = false;
 let currentDocumentAttachment = null;
+let currentImageModel = 'flux';
+let currentImageSize = '1024x1024';
+let enhanceArtPrompt = true;
 let isSending = false;
 let isSharedView = false;
 let activeLightboxIndex = null;
@@ -39,7 +42,7 @@ const LIMITS = {
     maxMessagesPerChat: 100,
     maxGalleryItems: 50,
     maxDocumentChars: 18000,
-    maxDocumentBytes: 1.5 * 1024 * 1024,
+    maxDocumentBytes: 8 * 1024 * 1024,
     maxRequestsPerMinute: 12,
     maxProRequestsPerMinute: 8
 };
@@ -49,6 +52,11 @@ if (window.marked) {
         gfm: true,
         breaks: true
     });
+}
+
+if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
 
 function escapeHtml(value) {
@@ -187,6 +195,9 @@ const successMsg = document.getElementById('auth-success');
 
 const micBtn = document.getElementById('mic-btn');
 const userInput = document.getElementById('user-input');
+const artOptions = document.getElementById('art-options');
+const imageModelSelect = document.getElementById('image-model-select');
+const imageSizeSelect = document.getElementById('image-size-select');
 
 const chatViewport = document.getElementById('chat-viewport');
 const sendBtn = document.getElementById('send-btn');
@@ -245,6 +256,30 @@ function toggleWebSearch() {
     showToast(webSearchEnabled ? "Web search enabled" : "Web search disabled");
 }
 
+function toggleArtEnhance() {
+    enhanceArtPrompt = !enhanceArtPrompt;
+
+    const btn = document.getElementById('enhance-art-toggle');
+    btn.classList.toggle('active', enhanceArtPrompt);
+    btn.title = enhanceArtPrompt ? "Enhance Prompt On" : "Enhance Prompt Off";
+
+    showToast(enhanceArtPrompt ? "Art prompt enhancement on" : "Art prompt enhancement off");
+}
+
+if (imageModelSelect) {
+    imageModelSelect.onchange = () => {
+        currentImageModel = imageModelSelect.value;
+        showToast(`Image model set to ${imageModelSelect.options[imageModelSelect.selectedIndex].text}`);
+    };
+}
+
+if (imageSizeSelect) {
+    imageSizeSelect.onchange = () => {
+        currentImageSize = imageSizeSelect.value;
+        showToast(`Image size set to ${imageSizeSelect.options[imageSizeSelect.selectedIndex].text}`);
+    };
+}
+
 // Close dropdown if user clicks outside of it
 document.addEventListener('click', (e) => {
     const pairs = [
@@ -273,10 +308,11 @@ function setMode(mode) {
 
     btnChatMode.classList.toggle('active', !isArtMode);
     btnArtMode.classList.toggle('active', isArtMode);
+    artOptions?.classList.toggle('hidden', !isArtMode);
 
     if (isArtMode && currentImageData) {
         clearImageUpload();
-        showToast("Photo upload is for chat only. Art Mode uses your text prompt.");
+        showToast("Photo analysis works in Chat Mode. Art Mode uses your text prompt.");
     }
 
     userInput.placeholder = isArtMode
@@ -598,13 +634,21 @@ async function handleSend() {
         return;
     }
 
-    const text = userInput.value.trim();
+    let text = userInput.value.trim();
     const imageToSend = currentImageData;
     const documentToSend = currentDocumentAttachment
         ? { ...currentDocumentAttachment }
         : null;
 
     if (!text && !imageToSend && !documentToSend) return;
+
+    if (!text && imageToSend) {
+        text = "Describe this image and extract any visible text.";
+    }
+
+    if (!text && documentToSend) {
+        text = "Summarize this file and point out the important details.";
+    }
 
     await sendMessage(text, {
         imageData: imageToSend,
@@ -670,12 +714,6 @@ async function sendMessage(text, options = {}) {
             return;
         }
 
-        if (imageData) {
-            const uploadedText = "You just uploaded a photo. Sorry, I can't describe photos in this version yet. You can still type what you want help with, or switch to Art Mode to generate new images.";
-            await addAiResponse(uploadedText, chat, { engine, persona });
-            return;
-        }
-
         const lower = text.toLowerCase();
         const imageKeywords = [
             'generate image', 'create image', 'make image',
@@ -707,6 +745,7 @@ async function sendMessage(text, options = {}) {
                 body: JSON.stringify({
                     prompt: text,
                     history,
+                    image: imageData,
                     documentContext: documentAttachment,
                     mode,
                     engine,
@@ -811,12 +850,57 @@ async function generateArtResponse(text, chat) {
     }
 
     const aiId = appendMessage('ai', "Generating art...", null, { skipTools: true });
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(text)}?seed=${Date.now()}`;
-    const aiText = `<img src="${url}" alt="${escapeHtml(text)}">`;
-    const aiIndex = await pushAiMessage(chat, aiText);
 
-    renderAiMessage(document.getElementById(aiId), aiText, aiIndex, { isHtml: true });
-    saveImageToGallery(url, text);
+    try {
+        const res = await fetch('/api/image', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                prompt: text,
+                model: currentImageModel,
+                size: currentImageSize,
+                quality: 'high',
+                enhance: enhanceArtPrompt,
+                userId: currentUserUid || 'guest'
+            })
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData?.error || `Image Error ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        if (!data?.url) {
+            throw new Error("Image provider returned no image.");
+        }
+
+        const promptLabel = escapeHtml(data.revisedPrompt || text);
+        const aiText = `
+            <figure class="generated-art">
+                <img src="${data.url}" alt="${promptLabel}">
+                <figcaption>${promptLabel}</figcaption>
+            </figure>
+        `;
+        const aiIndex = await pushAiMessage(chat, aiText, {
+            engine: currentEngine,
+            persona: currentPersona,
+            imageModel: currentImageModel
+        });
+
+        renderAiMessage(document.getElementById(aiId), aiText, aiIndex, { isHtml: true });
+        saveImageToGallery(data.url, data.revisedPrompt || text);
+
+    } catch (e) {
+        console.error("Image Generation Error:", e);
+
+        const errorText = `Image generation failed: ${e.message}. Try Turbo or a smaller prompt.`;
+        const aiIndex = await pushAiMessage(chat, errorText, { failed: true });
+        renderAiMessage(document.getElementById(aiId), errorText, aiIndex);
+    }
 }
 
 // --- APPEND MESSAGE ---
@@ -1564,7 +1648,7 @@ userInput.oninput = function() {
 
 document
     .getElementById('doc-upload')
-    .addEventListener('change', function(e) {
+    .addEventListener('change', async function(e) {
         const file = e.target.files[0];
 
         if (!file) return;
@@ -1573,49 +1657,90 @@ document
             'text/plain',
             'text/markdown',
             'text/csv',
+            'application/json',
+            'application/pdf',
             ''
         ];
 
-        if (!allowed.includes(file.type) && !/\.(txt|md|csv)$/i.test(file.name)) {
-            showToast("Please upload a TXT, MD, or CSV file.", "error");
+        if (!allowed.includes(file.type) && !/\.(txt|md|csv|json|pdf)$/i.test(file.name)) {
+            showToast("Please upload a TXT, MD, CSV, JSON, or PDF file.", "error");
             clearDocumentUpload();
             return;
         }
 
         if (file.size > LIMITS.maxDocumentBytes) {
-            showToast("Document is too large. Please keep it under 1.5MB.", "error");
+            showToast("File is too large. Please keep it under 8MB.", "error");
             clearDocumentUpload();
             return;
         }
 
-        const reader = new FileReader();
+        try {
+            let content = '';
 
-        reader.onload = function(event) {
-            let content = String(event.target.result || '');
-
-            if (content.length > LIMITS.maxDocumentChars) {
-                content = content.slice(0, LIMITS.maxDocumentChars);
-                showToast("Document attached. Long file was trimmed for speed.");
+            if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
+                content = await extractPdfText(file);
             } else {
-                showToast("Document attached.", "success");
+                content = await file.text();
             }
 
-            currentDocumentAttachment = {
-                name: file.name,
-                content
-            };
+            attachDocumentContent(file.name, content);
 
-            document.getElementById('document-name').innerText = file.name;
-            document.getElementById('document-preview-container').style.display = 'flex';
-        };
-
-        reader.onerror = function() {
+        } catch (error) {
+            console.error("Document Read Error:", error);
             showToast("Could not read this document.", "error");
             clearDocumentUpload();
-        };
-
-        reader.readAsText(file);
+        }
     });
+
+async function extractPdfText(file) {
+    if (!window.pdfjsLib) {
+        throw new Error("PDF reader is still loading.");
+    }
+
+    const data = new Uint8Array(await file.arrayBuffer());
+    const pdf = await pdfjsLib.getDocument({ data }).promise;
+    const pages = [];
+    const maxPages = Math.min(pdf.numPages, 25);
+
+    for (let pageNumber = 1; pageNumber <= maxPages; pageNumber++) {
+        const page = await pdf.getPage(pageNumber);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+            .map(item => item.str)
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        if (pageText) {
+            pages.push(`Page ${pageNumber}: ${pageText}`);
+        }
+    }
+
+    if (pdf.numPages > maxPages) {
+        pages.push(`Only the first ${maxPages} pages were attached to keep the chat fast.`);
+    }
+
+    return pages.join('\n\n') || "No selectable text was found in this PDF.";
+}
+
+function attachDocumentContent(name, content) {
+    let safeContent = String(content || '');
+
+    if (safeContent.length > LIMITS.maxDocumentChars) {
+        safeContent = safeContent.slice(0, LIMITS.maxDocumentChars);
+        showToast("File attached. Long content was trimmed for speed.");
+    } else {
+        showToast("File attached.", "success");
+    }
+
+    currentDocumentAttachment = {
+        name,
+        content: safeContent
+    };
+
+    document.getElementById('document-name').innerText = name;
+    document.getElementById('document-preview-container').style.display = 'flex';
+}
 
 // --- GALLERY ---
 function toggleGallery() {
@@ -1869,7 +1994,7 @@ document
 
         if (isArtMode) {
             setMode('chat');
-            showToast("Photo uploaded in Chat Mode. Photo description is not available yet.");
+            showToast("Photo uploaded in Chat Mode for analysis.");
         }
 
         // HARD LIMIT
@@ -1915,7 +2040,7 @@ document
 
                 document.getElementById('image-preview').src = currentImageData;
                 document.getElementById('image-preview-container').style.display = 'flex';
-                showToast("Photo uploaded. Sorry, I can't describe photos in this version yet.");
+                showToast("Photo uploaded. Ask me what to describe or extract.", "success");
             };
 
             img.src = event.target.result;

@@ -26,6 +26,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
     <div id="toast-container" class="toast-container"></div>
@@ -244,14 +245,28 @@
                     <button id="mode-chat" class="mode-btn active"><i class="fas fa-comment-alt"></i> Chat Mode</button>
                     <button id="mode-art" class="mode-btn"><i class="fas fa-paint-brush"></i> Art Mode</button>
                 </div>
+                <div id="art-options" class="art-options hidden">
+                    <select id="image-model-select" title="Image Model">
+                        <option value="flux">Flux</option>
+                        <option value="turbo">Turbo</option>
+                        <option value="kontext">Kontext</option>
+                    </select>
+                    <select id="image-size-select" title="Image Size">
+                        <option value="1024x1024">1:1</option>
+                        <option value="1280x720">16:9</option>
+                        <option value="720x1280">9:16</option>
+                        <option value="1024x768">4:3</option>
+                    </select>
+                    <button id="enhance-art-toggle" class="mini-action-btn active" title="Enhance Prompt" onclick="toggleArtEnhance()"><i class="fas fa-wand-magic-sparkles"></i></button>
+                </div>
 
                 <div class="input-wrapper">
                     <div class="input-row">
                         <button id="mic-btn" class="input-icon" title="Voice Input"><i class="fas fa-microphone"></i></button>
                         <label for="img-upload" class="input-icon" title="Upload Image"><i class="fas fa-image"></i></label>
                         <input type="file" id="img-upload" hidden accept="image/*">
-                        <label for="doc-upload" class="input-icon" title="Upload Document"><i class="fas fa-file-lines"></i></label>
-                        <input type="file" id="doc-upload" hidden accept=".txt,.md,.csv,text/plain,text/markdown,text/csv">
+                        <label for="doc-upload" class="input-icon" title="Upload File"><i class="fas fa-file-lines"></i></label>
+                        <input type="file" id="doc-upload" hidden accept=".txt,.md,.csv,.json,.pdf,text/plain,text/markdown,text/csv,application/json,application/pdf">
                         <textarea id="user-input" placeholder="Type a message or prompt..." rows="1"></textarea>
                         <button id="send-btn" class="send-button"><i class="fas fa-paper-plane"></i></button>
                     </div>

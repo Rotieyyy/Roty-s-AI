@@ -29,7 +29,9 @@ export default async function handler(req, res) {
             });
         }
 
-        if (!prompt || typeof prompt !== 'string') {
+        const hasPrompt = typeof prompt === 'string' && prompt.trim().length > 0;
+
+        if (!hasPrompt && !image && !documentContext) {
             return res.status(400).json({
                 error: "Prompt is required"
             });
@@ -39,13 +41,6 @@ export default async function handler(req, res) {
         if (image && image.length > 4_000_000) {
             return res.status(413).json({
                 error: "Image payload too large."
-            });
-        }
-
-        if (image) {
-            return res.status(200).json({
-                text:
-                    "You just uploaded a photo. Sorry, I can't describe photos in this version yet. You can still type what you want help with, or switch to Art Mode to generate new images."
             });
         }
 
@@ -64,7 +59,7 @@ export default async function handler(req, res) {
             "illustration of"
         ];
 
-        const lowerPrompt = prompt.toLowerCase();
+        const lowerPrompt = (prompt || '').toLowerCase();
 
         const isAskingForArt =
             artKeywords.some(word =>
@@ -72,7 +67,7 @@ export default async function handler(req, res) {
             );
 
         // --- STRICT MODE GATEKEEPER ---
-        if (mode === 'chat' && isAskingForArt) {
+        if (mode === 'chat' && isAskingForArt && !image) {
 
             return res.status(200).json({
                 text:
@@ -87,7 +82,9 @@ To generate images, please switch to **Art Mode** above and try again.`
         // --- MAP ROTY ENGINES TO GROQ MODELS ---
         let selectedGroqModel = "llama-3.1-8b-instant"; // Default Roty 1.0
 
-        if (engine === 'roty-2') {
+        if (image) {
+            selectedGroqModel = "meta-llama/llama-4-scout-17b-16e-instruct";
+        } else if (engine === 'roty-2') {
             selectedGroqModel = "llama-3.3-70b-versatile";
         } else if (engine === 'roty-pro') {
             selectedGroqModel = "llama-3.3-70b-versatile"; // Roty Pro 70B
@@ -161,9 +158,15 @@ ${webContext}`
             );
         }
 
+        const basePrompt = hasPrompt
+            ? prompt
+            : image
+                ? "Describe this image and extract any visible text."
+                : "Summarize this file and point out the important details.";
+
         const promptWithContext = contextParts.length
-            ? `${contextParts.join('\n\n')}\n\nUser request:\n${prompt}`
-            : prompt;
+            ? `${contextParts.join('\n\n')}\n\nUser request:\n${basePrompt}`
+            : basePrompt;
 
         const systemPrompt = mode === 'art'
             ? `
