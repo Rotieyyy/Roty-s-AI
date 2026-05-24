@@ -199,7 +199,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
 .mini-action-btn:hover, .mini-action-btn.active { background: var(--input); color: var(--text); border-color: var(--border); }
 .mini-action-btn.danger, .mini-action-btn.active.danger { color: #ef4444; }
 .message-download { position: relative; }
-.download-menu { position: absolute; top: 36px; left: 0; width: 120px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 12px 24px rgba(0,0,0,0.35); padding: 6px; z-index: 20; }
+.download-menu { position: absolute; bottom: 34px; right: 0; width: 120px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 12px 24px rgba(0,0,0,0.35); padding: 6px; z-index: 20; }
 .download-menu.hidden { display: none; }
 .download-menu button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text); padding: 8px 10px; border-radius: 7px; cursor: pointer; font-size: 13px; }
 .download-menu button:hover { background: var(--input); }
