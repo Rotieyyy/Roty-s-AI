@@ -83,7 +83,7 @@ To generate images, please switch to **Art Mode** above and try again.`
         let selectedGroqModel = "llama-3.1-8b-instant"; // Default Roty 1.0
 
         if (image) {
-            selectedGroqModel = "meta-llama/llama-4-scout-17b-16e-instruct";
+            selectedGroqModel = "llama-3.2-11b-vision-preview";
         } else if (engine === 'roty-2') {
             selectedGroqModel = "llama-3.3-70b-versatile";
         } else if (engine === 'roty-pro') {
@@ -215,7 +215,7 @@ Rules:
 
         const timeout = setTimeout(() => {
             controller.abort();
-        }, 30000);
+        }, 10000);
 
         // --- API REQUEST ---
         const response = await fetch(
@@ -232,11 +232,13 @@ Rules:
 
                 body: JSON.stringify({
 
-                    model: selectedGroqModel, // UPDATED: Uses dynamic engine map
+                    model: selectedGroqModel,
 
                     temperature: 0.7,
 
                     max_tokens: 2048,
+
+                    stream: true,
 
                     messages: [
                         {
@@ -266,27 +268,29 @@ Rules:
             });
         }
 
-        const data = await response.json();
+        // --- STREAMING RESPONSE SETUP ---
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
 
-        // --- SAFE RESPONSE EXTRACTION ---
-        const aiText =
-            data?.choices?.[0]?.message?.content;
-
-        if (
-            !aiText ||
-            typeof aiText !== 'string'
-        ) {
-
-            return res.status(200).json({
-                text:
-                    "The AI returned an empty response. Please try again."
-            });
+        try {
+            if (response.body.getReader) {
+                const reader = response.body.getReader();
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    res.write(value);
+                }
+            } else {
+                for await (const chunk of response.body) {
+                    res.write(chunk);
+                }
+            }
+        } catch (streamErr) {
+            console.error("Streaming error:", streamErr);
+        } finally {
+            res.end();
         }
-
-        // --- SUCCESS ---
-        return res.status(200).json({
-            text: aiText
-        });
 
     } catch (e) {
 
